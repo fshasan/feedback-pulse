@@ -2,10 +2,6 @@
 
 An AI-powered product feedback aggregation and analysis tool built on Cloudflare Workers. Automatically analyzes customer feedback from multiple sources using Llama AI models to extract sentiment, themes, urgency, and actionable insights.
 
-## Live Demo
-
-**🚀 [https://feedback-pulse.sharukh75hasan.workers.dev](https://feedback-pulse.sharukh75hasan.workers.dev)**
-
 ## Features
 
 ### 🤖 AI-Powered Analysis
