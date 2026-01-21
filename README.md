@@ -4,7 +4,7 @@ An AI-powered product feedback aggregation and analysis tool built on Cloudflare
 
 ## Live Demo
 
-**🚀 [https://flat-wildflower-2869.sharukh75hasan.workers.dev](https://flat-wildflower-2869.sharukh75hasan.workers.dev)**
+**🚀 [https://feedback-pulse.sharukh75hasan.workers.dev](https://feedback-pulse.sharukh75hasan.workers.dev)**
 
 ## Features
 
