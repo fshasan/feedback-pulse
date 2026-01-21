@@ -1,6 +1,4 @@
-# Feedback Pulse
 
-An AI-powered product feedback aggregation and analysis tool built on Cloudflare Workers. Automatically analyzes customer feedback from multiple sources using Llama AI models to extract sentiment, themes, urgency, and actionable insights.
 
 ## 🎯 Overview
 
@@ -126,7 +124,7 @@ npx wrangler d1 migrations apply feedback-db --remote
 
 4. **Deploy to Cloudflare Workers**
 ```bash
-npm run deploy
+npx wrangler deploy
 ```
 
 Your application will be available at: `https://feedback-pulse.<your-subdomain>.workers.dev`
