@@ -35,6 +35,9 @@
 			.header h1 {
 				font-size: 32px;
 				margin-bottom: 10px;
+			}
+
+			.header h1 .gradient-text {
 				background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 				-webkit-background-clip: text;
 				-webkit-text-fill-color: transparent;
@@ -159,18 +162,71 @@
 
 			.analysis-item {
 				padding: 16px;
-				background: #f9fafb;
-				border-radius: 8px;
+				border-radius: 10px;
 				text-align: center;
+				border: 1px solid transparent;
+			}
+
+			/* Sentiment Card - Blue/Purple */
+			.analysis-item.sentiment-card {
+				background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%);
+				border-color: #c4b5fd;
+			}
+			.analysis-item.sentiment-card label {
+				color: #6d28d9;
+			}
+
+			/* Value Score Card - Green */
+			.analysis-item.value-card {
+				background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+				border-color: #86efac;
+			}
+			.analysis-item.value-card label {
+				color: #166534;
+			}
+			.analysis-item.value-card .value {
+				color: #15803d;
+			}
+
+			/* Urgency Score Card - Orange/Amber */
+			.analysis-item.urgency-card {
+				background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+				border-color: #fcd34d;
+			}
+			.analysis-item.urgency-card label {
+				color: #92400e;
+			}
+			.analysis-item.urgency-card .value {
+				color: #b45309;
+			}
+
+			/* Themes Card - Blue */
+			.analysis-item.themes-card {
+				background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+				border-color: #93c5fd;
+			}
+			.analysis-item.themes-card label {
+				color: #1e40af;
 			}
 
 			.analysis-item label {
 				font-size: 11px;
-				color: #666;
 				text-transform: uppercase;
 				letter-spacing: 0.5px;
 				display: block;
 				margin-bottom: 8px;
+				font-weight: 600;
+				cursor: help;
+				position: relative;
+			}
+
+			.analysis-item label[title] {
+				border-bottom: 1px dashed currentColor;
+				display: inline-block;
+			}
+
+			.analysis-item label[title]:hover {
+				opacity: 0.8;
 			}
 
 			.analysis-item .value {
@@ -206,52 +262,56 @@
 			}
 
 			.summary-card {
-				background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-				border: 1px solid #e2e8f0;
-				border-radius: 10px;
+				background: linear-gradient(135deg, #fdf4ff 0%, #fae8ff 100%);
+				border: 1px solid #f0abfc;
+				border-radius: 12px;
 				padding: 20px;
 				margin-bottom: 20px;
+				box-shadow: 0 2px 8px rgba(192, 132, 252, 0.15);
 			}
 
 			.summary-card h4 {
 				font-size: 13px;
-				color: #64748b;
+				color: #a21caf;
 				text-transform: uppercase;
 				letter-spacing: 0.5px;
 				margin-bottom: 10px;
 				display: flex;
 				align-items: center;
 				gap: 8px;
+				font-weight: 600;
 			}
 
 			.summary-card p {
-				color: #334155;
+				color: #581c87;
 				line-height: 1.7;
 				font-size: 14px;
 				margin: 0;
 			}
 
 			.overall-summary-card {
-				background: linear-gradient(135deg, #667eea10 0%, #764ba210 100%);
-				border: 1px solid #667eea30;
-				border-radius: 10px;
+				background: linear-gradient(135deg, #ecfeff 0%, #cffafe 100%);
+				border: 1px solid #67e8f9;
+				border-radius: 12px;
 				padding: 20px;
 				margin-top: 20px;
+				box-shadow: 0 2px 8px rgba(34, 211, 238, 0.15);
 			}
 
 			.overall-summary-card h4 {
 				font-size: 13px;
-				color: #667eea;
+				color: #0e7490;
 				text-transform: uppercase;
 				letter-spacing: 0.5px;
 				margin-bottom: 10px;
 				display: flex;
 				align-items: center;
 				gap: 8px;
+				font-weight: 600;
 			}
 
 			.overall-summary-card p {
-				color: #333;
+				color: #164e63;
 				line-height: 1.7;
 				font-size: 14px;
 				margin: 0;
@@ -545,7 +605,7 @@
 	<body>
 		<div class="container">
 			<div class="header">
-				<h1>📊 Feedback Aggregation Dashboard</h1>
+				<h1>📊 <span class="gradient-text">Feedback Aggregation Dashboard</span></h1>
 				<p>Analyze feedback from multiple sources and track insights</p>
 			</div>
 
@@ -1155,29 +1215,29 @@
 					
 					<!-- Analysis Metrics (4 small cards side by side) -->
 					<div class="analysis-grid">
-						<div class="analysis-item">
-							<label>Sentiment</label>
+						<div class="analysis-item sentiment-card">
+							<label title="Sentiment measures the emotional tone of the feedback - whether it's positive, negative, or neutral. This helps understand customer satisfaction.">Sentiment ℹ️</label>
 							<div>
 								<span class="sentiment-badge ${sentimentClass}">${feedback.analysis.sentiment}</span>
 							</div>
-							<p id="sentimentExplanation" style="font-size: 11px; color: #666; margin-top: 8px; text-align: left;"><em>Loading...</em></p>
+							<p id="sentimentExplanation" style="font-size: 11px; color: #5b21b6; margin-top: 8px; text-align: left;"><em>Loading...</em></p>
 						</div>
-						<div class="analysis-item">
-							<label>Value Score</label>
+						<div class="analysis-item value-card">
+							<label title="Value Score (0-10) indicates how valuable this feedback is for product improvement. Higher scores mean more actionable insights based on source credibility and engagement.">Value Score ℹ️</label>
 							<div class="value">${feedback.analysis.valueScore}/10</div>
-							<p id="valueExplanation" style="font-size: 11px; color: #666; margin-top: 8px; text-align: left;"><em>Loading...</em></p>
+							<p id="valueExplanation" style="font-size: 11px; color: #166534; margin-top: 8px; text-align: left;"><em>Loading...</em></p>
 						</div>
-						<div class="analysis-item">
-							<label>Urgency Score</label>
+						<div class="analysis-item urgency-card">
+							<label title="Urgency Score (0-10) shows how quickly this feedback needs attention. High scores indicate critical issues, bugs, or blocking problems that require immediate action.">Urgency Score ℹ️</label>
 							<div class="value ${urgencyClass}">${feedback.analysis.urgencyScore}/10</div>
-							<p id="urgencyExplanation" style="font-size: 11px; color: #666; margin-top: 8px; text-align: left;"><em>Loading...</em></p>
+							<p id="urgencyExplanation" style="font-size: 11px; color: #92400e; margin-top: 8px; text-align: left;"><em>Loading...</em></p>
 						</div>
-						<div class="analysis-item">
-							<label>Themes Detected</label>
+						<div class="analysis-item themes-card">
+							<label title="Themes are the main topics identified in the feedback such as Performance, API, Security, Bugs, Features, Documentation, etc. Helps categorize and route feedback.">Themes Detected ℹ️</label>
 							<div class="themes-list" style="justify-content: center;">
 								${feedback.analysis.themes.map(theme => `<span class="theme-tag">${theme}</span>`).join('')}
 							</div>
-							<p id="themesExplanation" style="font-size: 11px; color: #666; margin-top: 8px; text-align: left;"><em>Loading...</em></p>
+							<p id="themesExplanation" style="font-size: 11px; color: #1e40af; margin-top: 8px; text-align: left;"><em>Loading...</em></p>
 						</div>
 					</div>
 					
