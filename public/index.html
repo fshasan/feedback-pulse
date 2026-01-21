@@ -152,7 +152,7 @@
 
 			.analysis-grid {
 				display: grid;
-				grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+				grid-template-columns: repeat(4, 1fr);
 				gap: 16px;
 				margin-bottom: 20px;
 			}
@@ -161,10 +161,11 @@
 				padding: 16px;
 				background: #f9fafb;
 				border-radius: 8px;
+				text-align: center;
 			}
 
 			.analysis-item label {
-				font-size: 12px;
+				font-size: 11px;
 				color: #666;
 				text-transform: uppercase;
 				letter-spacing: 0.5px;
@@ -173,9 +174,93 @@
 			}
 
 			.analysis-item .value {
-				font-size: 24px;
+				font-size: 22px;
 				font-weight: bold;
 				color: #333;
+			}
+
+			.feedback-header {
+				display: flex;
+				align-items: flex-start;
+				gap: 12px;
+				margin-bottom: 20px;
+				padding-bottom: 16px;
+				border-bottom: 1px solid #e5e7eb;
+			}
+
+			.feedback-id {
+				background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+				color: white;
+				padding: 4px 10px;
+				border-radius: 6px;
+				font-size: 12px;
+				font-weight: 600;
+				white-space: nowrap;
+			}
+
+			.feedback-content-display {
+				flex: 1;
+				color: #333;
+				line-height: 1.6;
+				font-size: 15px;
+			}
+
+			.summary-card {
+				background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+				border: 1px solid #e2e8f0;
+				border-radius: 10px;
+				padding: 20px;
+				margin-bottom: 20px;
+			}
+
+			.summary-card h4 {
+				font-size: 13px;
+				color: #64748b;
+				text-transform: uppercase;
+				letter-spacing: 0.5px;
+				margin-bottom: 10px;
+				display: flex;
+				align-items: center;
+				gap: 8px;
+			}
+
+			.summary-card p {
+				color: #334155;
+				line-height: 1.7;
+				font-size: 14px;
+				margin: 0;
+			}
+
+			.overall-summary-card {
+				background: linear-gradient(135deg, #667eea10 0%, #764ba210 100%);
+				border: 1px solid #667eea30;
+				border-radius: 10px;
+				padding: 20px;
+				margin-top: 20px;
+			}
+
+			.overall-summary-card h4 {
+				font-size: 13px;
+				color: #667eea;
+				text-transform: uppercase;
+				letter-spacing: 0.5px;
+				margin-bottom: 10px;
+				display: flex;
+				align-items: center;
+				gap: 8px;
+			}
+
+			.overall-summary-card p {
+				color: #333;
+				line-height: 1.7;
+				font-size: 14px;
+				margin: 0;
+			}
+
+			@media (max-width: 900px) {
+				.analysis-grid {
+					grid-template-columns: repeat(2, 1fr);
+				}
 			}
 
 			.sentiment-badge {
@@ -202,13 +287,6 @@
 				color: white;
 			}
 
-			.themes-list {
-				display: flex;
-				flex-wrap: wrap;
-				gap: 8px;
-				margin-top: 12px;
-			}
-
 			.theme-tag {
 				padding: 6px 12px;
 				background: #ede9fe;
@@ -218,43 +296,11 @@
 				font-weight: 600;
 			}
 
-			.explanation-section {
-				margin-top: 20px;
-				padding: 20px;
-				background: #f9fafb;
-				border-radius: 8px;
-				border-left: 4px solid #667eea;
-			}
-
-			.explanation-section h3 {
-				font-size: 16px;
-				margin-bottom: 16px;
-				color: #333;
+			.themes-list {
 				display: flex;
-				align-items: center;
-				gap: 8px;
-			}
-
-			.explanation-item {
-				margin-bottom: 16px;
-			}
-
-			.explanation-item:last-child {
-				margin-bottom: 0;
-			}
-
-			.explanation-item strong {
-				display: block;
-				margin-bottom: 6px;
-				color: #333;
-				font-size: 14px;
-			}
-
-			.explanation-item p {
-				color: #666;
-				font-size: 13px;
-				line-height: 1.6;
-				margin: 0;
+				flex-wrap: wrap;
+				gap: 6px;
+				margin-top: 8px;
 			}
 
 			.table-card {
@@ -1091,65 +1137,71 @@
 				const urgencyClass = feedback.analysis.urgencyScore >= 7 ? 'urgency-high' : 
 									feedback.analysis.urgencyScore >= 4 ? 'urgency-medium' : 'urgency-low';
 
-				// Show loading state
 				const isAI = feedback.analysis?.reasoning && feedback.analysis.reasoning !== 'Fallback analysis used' && feedback.analysis.reasoning !== 'Error occurred, fallback analysis used';
+				
+				// Initial render with loading state for explanations
 				content.innerHTML = `
+					<!-- Feedback Content with ID at top -->
+					<div class="feedback-header">
+						<span class="feedback-id">${feedback.id}</span>
+						<div class="feedback-content-display">${feedback.content}</div>
+					</div>
+					
+					<!-- Summary Card (long) -->
+					<div class="summary-card">
+						<h4>🤖 AI Summary</h4>
+						<p id="summaryText">${isAI && feedback.analysis.reasoning ? feedback.analysis.reasoning : '<em>Generating AI summary...</em>'}</p>
+					</div>
+					
+					<!-- Analysis Metrics (4 small cards side by side) -->
 					<div class="analysis-grid">
 						<div class="analysis-item">
 							<label>Sentiment</label>
 							<div>
 								<span class="sentiment-badge ${sentimentClass}">${feedback.analysis.sentiment}</span>
 							</div>
+							<p id="sentimentExplanation" style="font-size: 11px; color: #666; margin-top: 8px; text-align: left;"><em>Loading...</em></p>
 						</div>
 						<div class="analysis-item">
 							<label>Value Score</label>
 							<div class="value">${feedback.analysis.valueScore}/10</div>
+							<p id="valueExplanation" style="font-size: 11px; color: #666; margin-top: 8px; text-align: left;"><em>Loading...</em></p>
 						</div>
 						<div class="analysis-item">
 							<label>Urgency Score</label>
 							<div class="value ${urgencyClass}">${feedback.analysis.urgencyScore}/10</div>
+							<p id="urgencyExplanation" style="font-size: 11px; color: #666; margin-top: 8px; text-align: left;"><em>Loading...</em></p>
 						</div>
 						<div class="analysis-item">
-							<label>Source</label>
-							<div>
-								<span class="source-badge source-${feedback.source}">${feedback.source}</span>
+							<label>Themes Detected</label>
+							<div class="themes-list" style="justify-content: center;">
+								${feedback.analysis.themes.map(theme => `<span class="theme-tag">${theme}</span>`).join('')}
 							</div>
+							<p id="themesExplanation" style="font-size: 11px; color: #666; margin-top: 8px; text-align: left;"><em>Loading...</em></p>
 						</div>
 					</div>
-					<div>
-						<label style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">Identified Themes</label>
-						<div class="themes-list">
-							${feedback.analysis.themes.map(theme => `<span class="theme-tag">${theme}</span>`).join('')}
-						</div>
-					</div>
-					<div class="explanation-section">
-						<h3>📋 Analysis Explanation</h3>
-						${isAI && feedback.analysis.reasoning ? 
-							`<p style="color: #666; margin-bottom: 16px; font-style: italic;">${feedback.analysis.reasoning}</p>` :
-							`<p style="color: #666; font-style: italic;">🤖 Generating AI-powered explanation...</p>`
-						}
-					</div>
-					<div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
-						<label style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">Feedback Content</label>
-						<div style="color: #666; line-height: 1.6;">${feedback.content}</div>
+					
+					<!-- Overall Summary Card (long) at bottom -->
+					<div class="overall-summary-card" id="overallSummaryCard" style="display: none;">
+						<h4>📊 Overall Assessment</h4>
+						<p id="overallSummaryText"></p>
 					</div>
 				`;
 
 				card.classList.add('active');
 
-				// Fetch AI-generated explanation (only if we don't already have AI analysis)
+				// Fetch AI-generated explanations
 				try {
 					let explanations = {};
-					const isAI = feedback.analysis?.reasoning && feedback.analysis.reasoning !== 'Fallback analysis used' && feedback.analysis.reasoning !== 'Error occurred, fallback analysis used';
 					
 					if (isAI) {
-						// Use the AI reasoning if available, otherwise fetch detailed explanation
 						explanations = {
-							sentiment: `AI determined this feedback has ${feedback.analysis.sentiment} sentiment (score: ${feedback.analysis.sentimentScore}) based on contextual analysis of the content.`,
-							valueScore: `AI assigned a value score of ${feedback.analysis.valueScore}/10 based on the importance and relevance of the feedback to product improvement.`,
-							urgencyScore: `AI assessed urgency at ${feedback.analysis.urgencyScore}/10 based on whether this feedback requires immediate attention or indicates blocking issues.`,
-							themes: `AI identified these themes: ${feedback.analysis.themes.join(', ')}. These were determined through contextual understanding of the feedback content.`,
-							summary: feedback.analysis.reasoning
+							sentiment: `${feedback.analysis.sentiment.charAt(0).toUpperCase() + feedback.analysis.sentiment.slice(1)} sentiment detected with score ${feedback.analysis.sentimentScore}.`,
+							valueScore: `Rated ${feedback.analysis.valueScore}/10 based on business impact and relevance.`,
+							urgencyScore: `Urgency level ${feedback.analysis.urgencyScore}/10 - ${feedback.analysis.urgencyScore >= 7 ? 'requires immediate attention' : feedback.analysis.urgencyScore >= 4 ? 'should be addressed soon' : 'can be planned for later'}.`,
+							themes: `Identified: ${feedback.analysis.themes.join(', ')}.`,
+							summary: feedback.analysis.reasoning,
+							overall: `This ${feedback.source} feedback expresses ${feedback.analysis.sentiment} sentiment about ${feedback.analysis.themes.join(' and ')}. With a value score of ${feedback.analysis.valueScore}/10 and urgency of ${feedback.analysis.urgencyScore}/10, it ${feedback.analysis.urgencyScore >= 7 ? 'requires immediate attention' : feedback.analysis.urgencyScore >= 4 ? 'should be prioritized in upcoming sprints' : 'can be addressed in regular development cycles'}.`
 						};
 					} else {
 						// Fetch detailed explanation from AI
@@ -1168,73 +1220,43 @@
 								valueScore: getValueScoreExplanation(feedback.analysis.valueScore, feedback.source),
 								urgencyScore: getUrgencyExplanation(feedback.analysis.urgencyScore, feedback.content),
 								themes: feedback.analysis.isMeaningless ? 
-									'⚠️ This feedback has been flagged as meaningless or gibberish content. It contains repetitive patterns, random character sequences, or lacks coherent meaning. It should be filtered out or marked as invalid.' :
-									`The feedback has been categorized into ${feedback.analysis.themes.length} theme(s): ${feedback.analysis.themes.join(', ')}. These themes were identified based on keywords and context within the feedback content.`
+									'⚠️ Flagged as meaningless content.' :
+									`Identified: ${feedback.analysis.themes.join(', ')}.`,
+								overall: `This feedback from ${feedback.source} has been analyzed with ${feedback.analysis.sentiment} sentiment, value score of ${feedback.analysis.valueScore}/10, and urgency of ${feedback.analysis.urgencyScore}/10.`
 							};
 						}
 					}
 
-					// Update explanation section with content
-					const explanationSection = content.querySelector('.explanation-section');
-					explanationSection.innerHTML = `
-						<h3>📋 Analysis Explanation</h3>
-						${isAI && feedback.analysis.reasoning ? `
-						<div class="explanation-item" style="margin-bottom: 20px; padding: 12px; background: #f9fafb; border-radius: 6px;">
-							<strong>Summary</strong>
-							<p>${feedback.analysis.reasoning}</p>
-						</div>
-						` : ''}
-						<div class="explanation-item">
-							<strong>Sentiment Analysis (${feedback.analysis.sentiment})</strong>
-							<p>${explanations.sentiment || getSentimentExplanation(feedback.analysis.sentiment, feedback.analysis.sentimentScore)}</p>
-						</div>
-						<div class="explanation-item">
-							<strong>Value Score (${feedback.analysis.valueScore}/10)</strong>
-							<p>${explanations.valueScore || getValueScoreExplanation(feedback.analysis.valueScore, feedback.source)}</p>
-						</div>
-						<div class="explanation-item">
-							<strong>Urgency Score (${feedback.analysis.urgencyScore}/10)</strong>
-							<p>${explanations.urgencyScore || getUrgencyExplanation(feedback.analysis.urgencyScore, feedback.content)}</p>
-						</div>
-						<div class="explanation-item">
-							<strong>Themes Detected</strong>
-							<p>${explanations.themes || (feedback.analysis.isMeaningless ? 
-								'⚠️ This feedback has been flagged as meaningless or gibberish content. It contains repetitive patterns, random character sequences, or lacks coherent meaning. It should be filtered out or marked as invalid.' :
-								`The feedback has been categorized into ${feedback.analysis.themes.length} theme(s): ${feedback.analysis.themes.join(', ')}. These themes were identified based on keywords and context within the feedback content.`)
-							}</p>
-						</div>
-						${explanations.summary ? `
-						<div class="explanation-item" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #e5e7eb;">
-							<strong>Overall Summary</strong>
-							<p>${explanations.summary}</p>
-						</div>
-						` : ''}
-					`;
+					// Update all explanation sections
+					document.getElementById('summaryText').innerHTML = explanations.summary || feedback.analysis.reasoning || 'Analysis complete.';
+					document.getElementById('sentimentExplanation').innerHTML = explanations.sentiment || getSentimentExplanation(feedback.analysis.sentiment, feedback.analysis.sentimentScore);
+					document.getElementById('valueExplanation').innerHTML = explanations.valueScore || getValueScoreExplanation(feedback.analysis.valueScore, feedback.source);
+					document.getElementById('urgencyExplanation').innerHTML = explanations.urgencyScore || getUrgencyExplanation(feedback.analysis.urgencyScore, feedback.content);
+					document.getElementById('themesExplanation').innerHTML = explanations.themes || `Identified: ${feedback.analysis.themes.join(', ')}.`;
+					
+					// Show overall summary
+					const overallCard = document.getElementById('overallSummaryCard');
+					const overallText = document.getElementById('overallSummaryText');
+					if (explanations.overall || explanations.summary) {
+						overallText.innerHTML = explanations.overall || `Based on the analysis: ${explanations.summary}`;
+						overallCard.style.display = 'block';
+					}
+					
 				} catch (error) {
 					// Fallback to rule-based if AI fails
-					const explanationSection = content.querySelector('.explanation-section');
-					explanationSection.innerHTML = `
-						<h3>📋 Analysis Explanation</h3>
-						<div class="explanation-item">
-							<strong>Sentiment Analysis (${feedback.analysis.sentiment})</strong>
-							<p>${getSentimentExplanation(feedback.analysis.sentiment, feedback.analysis.sentimentScore)}</p>
-						</div>
-						<div class="explanation-item">
-							<strong>Value Score (${feedback.analysis.valueScore}/10)</strong>
-							<p>${getValueScoreExplanation(feedback.analysis.valueScore, feedback.source)}</p>
-						</div>
-						<div class="explanation-item">
-							<strong>Urgency Score (${feedback.analysis.urgencyScore}/10)</strong>
-							<p>${getUrgencyExplanation(feedback.analysis.urgencyScore, feedback.content)}</p>
-						</div>
-						<div class="explanation-item">
-							<strong>Themes Detected</strong>
-							<p>${feedback.analysis.isMeaningless ? 
-								'⚠️ This feedback has been flagged as meaningless or gibberish content. It contains repetitive patterns, random character sequences, or lacks coherent meaning. It should be filtered out or marked as invalid.' :
-								`The feedback has been categorized into ${feedback.analysis.themes.length} theme(s): ${feedback.analysis.themes.join(', ')}. These themes were identified based on keywords and context within the feedback content.`
-							}</p>
-						</div>
-					`;
+					document.getElementById('summaryText').innerHTML = 'Analysis complete using rule-based system.';
+					document.getElementById('sentimentExplanation').innerHTML = getSentimentExplanation(feedback.analysis.sentiment, feedback.analysis.sentimentScore);
+					document.getElementById('valueExplanation').innerHTML = getValueScoreExplanation(feedback.analysis.valueScore, feedback.source);
+					document.getElementById('urgencyExplanation').innerHTML = getUrgencyExplanation(feedback.analysis.urgencyScore, feedback.content);
+					document.getElementById('themesExplanation').innerHTML = feedback.analysis.isMeaningless ? 
+						'⚠️ Flagged as meaningless content.' :
+						`Identified: ${feedback.analysis.themes.join(', ')}.`;
+					
+					// Show overall summary
+					const overallCard = document.getElementById('overallSummaryCard');
+					const overallText = document.getElementById('overallSummaryText');
+					overallText.innerHTML = `This feedback from ${feedback.source} has been analyzed with ${feedback.analysis.sentiment} sentiment, value score of ${feedback.analysis.valueScore}/10, and urgency of ${feedback.analysis.urgencyScore}/10.`;
+					overallCard.style.display = 'block';
 				}
 			}
 
