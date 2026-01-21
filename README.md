@@ -99,7 +99,7 @@ npx wrangler d1 migrations apply feedback-db --remote
 
 4. **Deploy to Cloudflare Workers**
 ```bash
-npm run deploy
+npm wrangler deploy
 ```
 
 ## API Endpoints
