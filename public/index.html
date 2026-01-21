@@ -1,0 +1,1364 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Feedback Aggregation Dashboard</title>
+		<style>
+			* {
+				margin: 0;
+				padding: 0;
+				box-sizing: border-box;
+			}
+
+			body {
+				font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+				background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+				min-height: 100vh;
+				padding: 20px;
+				color: #333;
+			}
+
+			.container {
+				max-width: 1400px;
+				margin: 0 auto;
+			}
+
+			.header {
+				background: white;
+				border-radius: 16px;
+				padding: 30px;
+				margin-bottom: 20px;
+				box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+			}
+
+			.header h1 {
+				font-size: 32px;
+				margin-bottom: 10px;
+				background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+				-webkit-background-clip: text;
+				-webkit-text-fill-color: transparent;
+				background-clip: text;
+			}
+
+			.header p {
+				color: #666;
+				font-size: 16px;
+			}
+
+			.form-card {
+				background: white;
+				border-radius: 12px;
+				padding: 24px;
+				margin-bottom: 20px;
+				box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+			}
+
+			.form-card h2 {
+				font-size: 20px;
+				margin-bottom: 20px;
+				color: #333;
+			}
+
+			.form-group {
+				margin-bottom: 16px;
+			}
+
+			.form-group label {
+				display: block;
+				margin-bottom: 8px;
+				font-weight: 600;
+				color: #333;
+				font-size: 14px;
+			}
+
+			.form-group label.required::after {
+				content: " *";
+				color: #ef4444;
+			}
+
+			.form-group textarea:invalid:not(:focus):not(:placeholder-shown),
+			.form-group select:invalid:not(:focus) {
+				border-color: #ef4444;
+				box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+			}
+
+			.form-group textarea:required:invalid,
+			.form-group select:required:invalid {
+				border-color: #e5e7eb;
+			}
+
+			.form-group textarea,
+			.form-group select {
+				width: 100%;
+				padding: 12px;
+				border: 2px solid #e5e7eb;
+				border-radius: 8px;
+				font-size: 14px;
+				font-family: inherit;
+				transition: border-color 0.2s;
+			}
+
+			.form-group textarea:focus,
+			.form-group select:focus {
+				outline: none;
+				border-color: #667eea;
+			}
+
+			.form-group textarea {
+				min-height: 120px;
+				resize: vertical;
+			}
+
+			.analyze-btn {
+				background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+				color: white;
+				border: none;
+				padding: 12px 32px;
+				border-radius: 8px;
+				font-size: 16px;
+				font-weight: 600;
+				cursor: pointer;
+				transition: transform 0.2s, box-shadow 0.2s;
+			}
+
+			.analyze-btn:hover {
+				transform: translateY(-2px);
+				box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+			}
+
+			.analyze-btn:active {
+				transform: translateY(0);
+			}
+
+			.analysis-card {
+				background: white;
+				border-radius: 12px;
+				padding: 24px;
+				margin-bottom: 20px;
+				box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+				display: none;
+			}
+
+			.analysis-card.active {
+				display: block;
+			}
+
+			.analysis-card h2 {
+				font-size: 20px;
+				margin-bottom: 20px;
+				color: #333;
+			}
+
+			.analysis-grid {
+				display: grid;
+				grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+				gap: 16px;
+				margin-bottom: 20px;
+			}
+
+			.analysis-item {
+				padding: 16px;
+				background: #f9fafb;
+				border-radius: 8px;
+			}
+
+			.analysis-item label {
+				font-size: 12px;
+				color: #666;
+				text-transform: uppercase;
+				letter-spacing: 0.5px;
+				display: block;
+				margin-bottom: 8px;
+			}
+
+			.analysis-item .value {
+				font-size: 24px;
+				font-weight: bold;
+				color: #333;
+			}
+
+			.sentiment-badge {
+				display: inline-block;
+				padding: 6px 16px;
+				border-radius: 16px;
+				font-size: 14px;
+				font-weight: 600;
+				text-transform: uppercase;
+			}
+
+			.sentiment-positive {
+				background: #10b981;
+				color: white;
+			}
+
+			.sentiment-negative {
+				background: #ef4444;
+				color: white;
+			}
+
+			.sentiment-neutral {
+				background: #6b7280;
+				color: white;
+			}
+
+			.themes-list {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 8px;
+				margin-top: 12px;
+			}
+
+			.theme-tag {
+				padding: 6px 12px;
+				background: #ede9fe;
+				color: #6b21a8;
+				border-radius: 6px;
+				font-size: 12px;
+				font-weight: 600;
+			}
+
+			.explanation-section {
+				margin-top: 20px;
+				padding: 20px;
+				background: #f9fafb;
+				border-radius: 8px;
+				border-left: 4px solid #667eea;
+			}
+
+			.explanation-section h3 {
+				font-size: 16px;
+				margin-bottom: 16px;
+				color: #333;
+				display: flex;
+				align-items: center;
+				gap: 8px;
+			}
+
+			.explanation-item {
+				margin-bottom: 16px;
+			}
+
+			.explanation-item:last-child {
+				margin-bottom: 0;
+			}
+
+			.explanation-item strong {
+				display: block;
+				margin-bottom: 6px;
+				color: #333;
+				font-size: 14px;
+			}
+
+			.explanation-item p {
+				color: #666;
+				font-size: 13px;
+				line-height: 1.6;
+				margin: 0;
+			}
+
+			.table-card {
+				background: white;
+				border-radius: 12px;
+				padding: 24px;
+				box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+				overflow-x: auto;
+			}
+
+			.table-card h2 {
+				font-size: 20px;
+				margin-bottom: 20px;
+				color: #333;
+			}
+
+			table {
+				width: 100%;
+				border-collapse: collapse;
+			}
+
+			thead {
+				background: #f9fafb;
+			}
+
+			th {
+				padding: 12px;
+				text-align: left;
+				font-weight: 600;
+				font-size: 12px;
+				text-transform: uppercase;
+				color: #666;
+				letter-spacing: 0.5px;
+			}
+
+			td {
+				padding: 12px;
+				border-top: 1px solid #e5e7eb;
+				font-size: 14px;
+			}
+
+			tbody tr {
+				cursor: pointer;
+				transition: background-color 0.2s;
+			}
+
+			tbody tr:hover {
+				background-color: #f9fafb;
+			}
+
+			tbody tr.selected {
+				background-color: #ede9fe;
+			}
+
+			.source-badge {
+				padding: 4px 10px;
+				border-radius: 6px;
+				font-size: 11px;
+				font-weight: 600;
+				text-transform: uppercase;
+				display: inline-block;
+			}
+
+			.source-support { background: #dbeafe; color: #1e40af; }
+			.source-discord { background: #ede9fe; color: #6b21a8; }
+			.source-github { background: #f3f4f6; color: #374151; }
+			.source-twitter { background: #dbeafe; color: #0369a1; }
+			.source-email { background: #fef3c7; color: #92400e; }
+			.source-forum { background: #dcfce7; color: #166534; }
+
+			.urgency-high { color: #ef4444; font-weight: 600; }
+			.urgency-medium { color: #f59e0b; font-weight: 600; }
+			.urgency-low { color: #10b981; font-weight: 600; }
+
+			/* Filter and Pagination Styles */
+			.table-controls {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 16px;
+				margin-bottom: 20px;
+				align-items: center;
+			}
+
+			.filter-group {
+				display: flex;
+				align-items: center;
+				gap: 8px;
+			}
+
+			.filter-group label {
+				font-size: 13px;
+				font-weight: 600;
+				color: #666;
+			}
+
+			.filter-group select,
+			.filter-group input {
+				padding: 8px 12px;
+				border: 2px solid #e5e7eb;
+				border-radius: 6px;
+				font-size: 13px;
+				background: white;
+			}
+
+			.filter-group select:focus,
+			.filter-group input:focus {
+				outline: none;
+				border-color: #667eea;
+			}
+
+			.search-input {
+				min-width: 200px;
+			}
+
+			.pagination {
+				display: flex;
+				align-items: center;
+				gap: 8px;
+				margin-top: 20px;
+				justify-content: center;
+			}
+
+			.pagination-btn {
+				padding: 8px 16px;
+				border: 2px solid #e5e7eb;
+				background: white;
+				border-radius: 6px;
+				font-size: 13px;
+				cursor: pointer;
+				transition: all 0.2s;
+			}
+
+			.pagination-btn:hover:not(:disabled) {
+				border-color: #667eea;
+				color: #667eea;
+			}
+
+			.pagination-btn:disabled {
+				opacity: 0.5;
+				cursor: not-allowed;
+			}
+
+			.pagination-btn.active {
+				background: #667eea;
+				color: white;
+				border-color: #667eea;
+			}
+
+			.pagination-info {
+				font-size: 13px;
+				color: #666;
+				margin: 0 12px;
+			}
+
+			.table-header {
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				margin-bottom: 16px;
+				flex-wrap: wrap;
+				gap: 12px;
+			}
+
+			.table-header h2 {
+				margin: 0;
+			}
+
+			.results-count {
+				font-size: 13px;
+				color: #666;
+			}
+
+			th.sortable {
+				cursor: pointer;
+				user-select: none;
+			}
+
+			th.sortable:hover {
+				background: #f0f0f0;
+			}
+
+			th.sortable::after {
+				content: ' ↕';
+				opacity: 0.3;
+			}
+
+			th.sortable.asc::after {
+				content: ' ↑';
+				opacity: 1;
+			}
+
+			th.sortable.desc::after {
+				content: ' ↓';
+				opacity: 1;
+			}
+
+			.loading {
+				text-align: center;
+				padding: 40px;
+				color: white;
+			}
+
+			.error {
+				background: #fee2e2;
+				border: 1px solid #fca5a5;
+				color: #991b1b;
+				padding: 16px;
+				border-radius: 8px;
+				margin: 20px 0;
+			}
+
+			.feedback-title {
+				font-weight: 600;
+				color: #333;
+			}
+
+			.feedback-preview {
+				color: #666;
+				font-size: 13px;
+				margin-top: 4px;
+				overflow: hidden;
+				text-overflow: ellipsis;
+				white-space: nowrap;
+				max-width: 300px;
+			}
+
+			@media (max-width: 768px) {
+				.analysis-grid {
+					grid-template-columns: 1fr;
+				}
+
+				table {
+					font-size: 12px;
+				}
+
+				th, td {
+					padding: 8px;
+				}
+			}
+		</style>
+	</head>
+	<body>
+		<div class="container">
+			<div class="header">
+				<h1>📊 Feedback Aggregation Dashboard</h1>
+				<p>Analyze feedback from multiple sources and track insights</p>
+			</div>
+
+			<div id="loading" class="loading">Loading feedback data...</div>
+			<div id="error" class="error" style="display: none;"></div>
+
+			<div id="dashboard" style="display: none;">
+				<!-- Input Form -->
+				<div class="form-card">
+					<h2>Add New Feedback</h2>
+					<form id="feedbackForm" onsubmit="handleAnalyze(event)" novalidate>
+						<div class="form-group">
+							<label for="feedbackInput" class="required">Feedback Content</label>
+							<textarea 
+								id="feedbackInput" 
+								placeholder="Enter feedback text here..."
+								required
+								minlength="10"
+							></textarea>
+						</div>
+						<div class="form-group">
+							<label for="sourceSelect" class="required">Source</label>
+							<select id="sourceSelect" required>
+								<option value="">Select a source...</option>
+								<option value="support">Customer Support</option>
+								<option value="discord">Discord</option>
+								<option value="github">GitHub</option>
+								<option value="twitter">Twitter/X</option>
+								<option value="email">Email</option>
+								<option value="forum">Community Forum</option>
+							</select>
+						</div>
+						<button type="submit" class="analyze-btn">Analyze</button>
+					</form>
+				</div>
+
+				<!-- Analysis Card -->
+				<div class="analysis-card" id="analysisCard">
+					<h2>Analysis Results</h2>
+					<div id="analysisContent"></div>
+				</div>
+
+				<!-- Feedback Table -->
+				<div class="table-card">
+					<div class="table-header">
+						<h2>All Feedback Items</h2>
+						<span class="results-count" id="resultsCount"></span>
+					</div>
+					
+					<!-- Filters -->
+					<div class="table-controls">
+						<div class="filter-group">
+							<label for="filterSource">Source:</label>
+							<select id="filterSource" onchange="applyFilters()">
+								<option value="all">All Sources</option>
+								<option value="support">Support</option>
+								<option value="discord">Discord</option>
+								<option value="github">GitHub</option>
+								<option value="twitter">Twitter</option>
+								<option value="email">Email</option>
+								<option value="forum">Forum</option>
+							</select>
+						</div>
+						<div class="filter-group">
+							<label for="filterSentiment">Sentiment:</label>
+							<select id="filterSentiment" onchange="applyFilters()">
+								<option value="all">All</option>
+								<option value="positive">Positive</option>
+								<option value="neutral">Neutral</option>
+								<option value="negative">Negative</option>
+							</select>
+						</div>
+						<div class="filter-group">
+							<label for="searchInput">Search:</label>
+							<input type="text" id="searchInput" class="search-input" placeholder="Search feedback..." oninput="debounceSearch()">
+						</div>
+						<div class="filter-group">
+							<label for="limitSelect">Show:</label>
+							<select id="limitSelect" onchange="applyFilters()">
+								<option value="5">5</option>
+								<option value="10" selected>10</option>
+								<option value="25">25</option>
+								<option value="50">50</option>
+							</select>
+						</div>
+					</div>
+					
+					<table>
+						<thead>
+							<tr>
+								<th>Title</th>
+								<th>Source</th>
+								<th>Sentiment</th>
+								<th class="sortable" data-sort="urgency_score" onclick="sortBy('urgency_score')">Urgency</th>
+								<th class="sortable" data-sort="value_score" onclick="sortBy('value_score')">Value Score</th>
+								<th>Themes</th>
+								<th class="sortable desc" data-sort="timestamp" onclick="sortBy('timestamp')">Date</th>
+							</tr>
+						</thead>
+						<tbody id="feedbackTableBody">
+						</tbody>
+					</table>
+					
+					<!-- Pagination -->
+					<div class="pagination" id="pagination"></div>
+				</div>
+			</div>
+		</div>
+
+		<script>
+			let allFeedback = [];
+			let selectedFeedbackId = null;
+			let currentPage = 1;
+			let totalPages = 1;
+			let totalCount = 0;
+			let currentSortBy = 'timestamp';
+			let currentSortOrder = 'desc';
+			let searchTimeout = null;
+
+			// Analysis functions (same logic as backend)
+			function analyzeSentiment(text) {
+				const lowerText = text.toLowerCase();
+				
+				const positiveWords = ['great', 'excellent', 'amazing', 'love', 'thank', 'awesome', 'fantastic', 'perfect', 'helpful', 'saved', 'game changer'];
+				const negativeWords = ['bug', 'error', 'issue', 'problem', 'frustrating', 'broken', 'down', 'slow', 'fail', 'urgent', 'blocker', 'steep'];
+				const urgentWords = ['urgent', 'critical', 'blocking', 'down', 'broken', 'asap', 'immediately', 'production'];
+				
+				let score = 0;
+				let isUrgent = false;
+				
+				positiveWords.forEach(word => {
+					if (lowerText.includes(word)) score += 1;
+				});
+				
+				negativeWords.forEach(word => {
+					if (lowerText.includes(word)) score -= 1;
+				});
+				
+				urgentWords.forEach(word => {
+					if (lowerText.includes(word)) isUrgent = true;
+				});
+				
+				if (score > 1) return { sentiment: 'positive', score: Math.min(score, 3), isUrgent };
+				if (score < -1) return { sentiment: 'negative', score: Math.max(score, -3), isUrgent };
+				return { sentiment: 'neutral', score: 0, isUrgent };
+			}
+
+			function isMeaningless(text) {
+				const trimmed = text.trim();
+				
+				// Check for repetitive character patterns (like "dasdasdasd")
+				const repetitivePattern = /(.{2,})\1{2,}/;
+				if (repetitivePattern.test(trimmed)) {
+					return true;
+				}
+				
+				// Check for too many repeated words
+				const words = trimmed.toLowerCase().split(/\s+/);
+				const wordCounts = {};
+				words.forEach(word => {
+					wordCounts[word] = (wordCounts[word] || 0) + 1;
+				});
+				
+				// If more than 50% of words are the same, it's likely meaningless
+				const maxCount = Math.max(...Object.values(wordCounts));
+				if (maxCount > words.length * 0.5 && words.length > 3) {
+					return true;
+				}
+				
+				// Check for random character sequences (lots of consonants without vowels)
+				const consonantBlocks = trimmed.match(/[bcdfghjklmnpqrstvwxyz]{4,}/gi);
+				if (consonantBlocks && consonantBlocks.length > 2) {
+					return true;
+				}
+				
+				// Check for strings with very few unique characters
+				const uniqueChars = new Set(trimmed.toLowerCase().replace(/\s/g, ''));
+				if (uniqueChars.size < 5 && trimmed.length > 20) {
+					return true;
+				}
+				
+				// Check for nonsense patterns (repeated short sequences)
+				const shortRepeats = /(.{2,4})\1{3,}/;
+				if (shortRepeats.test(trimmed.toLowerCase())) {
+					return true;
+				}
+				
+				// Check if it's mostly non-alphabetic characters
+				const alphabeticChars = trimmed.match(/[a-z]/gi);
+				if (alphabeticChars && alphabeticChars.length < trimmed.length * 0.3) {
+					return true;
+				}
+				
+				return false;
+			}
+
+			function extractThemes(text) {
+				const themes = [];
+				const lowerText = text.toLowerCase();
+				
+				// Check for meaningless content first
+				if (isMeaningless(text)) {
+					themes.push('Meaningless Content');
+					return themes; // Return early if meaningless
+				}
+				
+				const themeKeywords = {
+					'Performance': ['slow', 'latency', 'speed', 'performance', 'loading', 'response time', 'fast'],
+					'API': ['api', 'endpoint', 'rate limit', 'request', 'rest', 'graphql'],
+					'Pricing': ['price', 'cost', 'billing', 'afford', 'expensive', 'pricing'],
+					'Security': ['ssl', 'certificate', 'ddos', 'attack', 'security', 'saml', 'sso'],
+					'Documentation': ['documentation', 'docs', 'guide', 'tutorial', 'example'],
+					'Features': ['feature', 'request', 'missing', 'add', 'support', 'integration'],
+					'Bugs': ['bug', 'error', 'issue', 'broken', 'leak', 'crash'],
+					'Reliability': ['downtime', 'outage', 'fail', 'down', 'unavailable']
+				};
+				
+				Object.keys(themeKeywords).forEach(theme => {
+					if (themeKeywords[theme].some(keyword => lowerText.includes(keyword))) {
+						themes.push(theme);
+					}
+				});
+				
+				return themes.length > 0 ? themes : ['General'];
+			}
+
+			function calculateValueScore(feedback) {
+				let score = 0;
+				
+				// Engagement metrics
+				if (feedback.source === 'twitter') {
+					const engagement = (feedback.metadata?.likes || 0) + (feedback.metadata?.retweets || 0) * 2;
+					score += Math.min(engagement / 10, 5);
+				}
+				
+				if (feedback.source === 'github') {
+					const engagement = (feedback.metadata?.upvotes || 0) + (feedback.metadata?.comments || 0) * 2;
+					score += Math.min(engagement / 10, 5);
+				}
+				
+				if (feedback.source === 'discord') {
+					score += Math.min((feedback.metadata?.reactions || 0) / 5, 5);
+				}
+				
+				// Urgency indicators
+				const sentiment = analyzeSentiment(feedback.content);
+				if (sentiment.isUrgent || feedback.metadata?.priority === 'high') {
+					score += 3;
+				}
+				
+				// Source credibility
+				const sourceWeights = {
+					'support': 3,
+					'email': 2.5,
+					'github': 2,
+					'discord': 1.5,
+					'twitter': 1,
+					'forum': 1
+				};
+				score += sourceWeights[feedback.source] || 1;
+				
+				return Math.min(Math.round(score * 10) / 10, 10);
+			}
+
+			function processFeedback(feedback) {
+				const isInvalid = isMeaningless(feedback.content);
+				const sentiment = isInvalid ? { sentiment: 'neutral', score: 0, isUrgent: false } : analyzeSentiment(feedback.content);
+				const themes = extractThemes(feedback.content);
+				const valueScore = isInvalid ? 0 : calculateValueScore(feedback);
+				const urgencyScore = isInvalid ? 0 : (sentiment.isUrgent || feedback.metadata?.priority === 'high' ? 
+					(feedback.metadata?.priority === 'critical' ? 10 : 8) : 
+					(sentiment.sentiment === 'negative' ? 5 : 2));
+				
+				return {
+					...feedback,
+					analysis: {
+						sentiment: sentiment.sentiment,
+						sentimentScore: sentiment.score,
+						themes,
+						valueScore,
+						urgencyScore,
+						isMeaningless: isInvalid
+					}
+				};
+			}
+
+			async function loadData(page = 1) {
+				try {
+					// Build query string with filters
+					const source = document.getElementById('filterSource')?.value || 'all';
+					const sentiment = document.getElementById('filterSentiment')?.value || 'all';
+					const search = document.getElementById('searchInput')?.value || '';
+					const limit = document.getElementById('limitSelect')?.value || 10;
+					
+					const params = new URLSearchParams({
+						page,
+						limit,
+						source,
+						sentiment,
+						search,
+						sortBy: currentSortBy,
+						sortOrder: currentSortOrder
+					});
+					
+					const feedbackRes = await fetch(`/api/feedback?${params}`);
+					if (!feedbackRes.ok) {
+						throw new Error('Failed to load data');
+					}
+					
+					const response = await feedbackRes.json();
+					
+					// Handle both paginated and non-paginated responses
+					if (response.data) {
+						allFeedback = response.data;
+						currentPage = response.pagination.page;
+						totalPages = response.pagination.totalPages;
+						totalCount = response.pagination.totalCount;
+					} else {
+						// Fallback for old API format
+						allFeedback = response;
+						totalCount = response.length;
+						totalPages = 1;
+						currentPage = 1;
+					}
+
+					document.getElementById('loading').style.display = 'none';
+					document.getElementById('dashboard').style.display = 'block';
+					renderTable();
+					renderPagination();
+					updateResultsCount();
+
+				} catch (error) {
+					document.getElementById('loading').style.display = 'none';
+					document.getElementById('error').style.display = 'block';
+					document.getElementById('error').textContent = 'Error loading data: ' + error.message;
+				}
+			}
+			
+			function applyFilters() {
+				currentPage = 1;
+				loadData(1);
+			}
+			
+			function debounceSearch() {
+				clearTimeout(searchTimeout);
+				searchTimeout = setTimeout(() => {
+					applyFilters();
+				}, 300);
+			}
+			
+			function sortBy(column) {
+				// Toggle sort order if same column
+				if (currentSortBy === column) {
+					currentSortOrder = currentSortOrder === 'asc' ? 'desc' : 'asc';
+				} else {
+					currentSortBy = column;
+					currentSortOrder = 'desc';
+				}
+				
+				// Update sort indicators
+				document.querySelectorAll('th.sortable').forEach(th => {
+					th.classList.remove('asc', 'desc');
+					if (th.dataset.sort === column) {
+						th.classList.add(currentSortOrder);
+					}
+				});
+				
+				loadData(currentPage);
+			}
+			
+			function goToPage(page) {
+				if (page >= 1 && page <= totalPages) {
+					currentPage = page;
+					loadData(page);
+				}
+			}
+			
+			function renderPagination() {
+				const pagination = document.getElementById('pagination');
+				if (totalPages <= 1) {
+					pagination.innerHTML = '';
+					return;
+				}
+				
+				let html = '';
+				
+				// Previous button
+				html += `<button class="pagination-btn" onclick="goToPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>← Prev</button>`;
+				
+				// Page numbers
+				const maxButtons = 5;
+				let startPage = Math.max(1, currentPage - Math.floor(maxButtons / 2));
+				let endPage = Math.min(totalPages, startPage + maxButtons - 1);
+				
+				if (endPage - startPage < maxButtons - 1) {
+					startPage = Math.max(1, endPage - maxButtons + 1);
+				}
+				
+				if (startPage > 1) {
+					html += `<button class="pagination-btn" onclick="goToPage(1)">1</button>`;
+					if (startPage > 2) {
+						html += `<span class="pagination-info">...</span>`;
+					}
+				}
+				
+				for (let i = startPage; i <= endPage; i++) {
+					html += `<button class="pagination-btn ${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
+				}
+				
+				if (endPage < totalPages) {
+					if (endPage < totalPages - 1) {
+						html += `<span class="pagination-info">...</span>`;
+					}
+					html += `<button class="pagination-btn" onclick="goToPage(${totalPages})">${totalPages}</button>`;
+				}
+				
+				// Next button
+				html += `<button class="pagination-btn" onclick="goToPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>Next →</button>`;
+				
+				pagination.innerHTML = html;
+			}
+			
+			function updateResultsCount() {
+				const resultsCount = document.getElementById('resultsCount');
+				const limit = parseInt(document.getElementById('limitSelect')?.value || 10);
+				const start = (currentPage - 1) * limit + 1;
+				const end = Math.min(currentPage * limit, totalCount);
+				
+				if (totalCount === 0) {
+					resultsCount.textContent = 'No results found';
+				} else {
+					resultsCount.textContent = `Showing ${start}-${end} of ${totalCount} results`;
+				}
+			}
+
+			async function handleAnalyze(event) {
+				event.preventDefault();
+				
+				const form = event.target;
+				const contentInput = document.getElementById('feedbackInput');
+				const sourceSelect = document.getElementById('sourceSelect');
+				const content = contentInput.value.trim();
+				const source = sourceSelect.value;
+				
+				// Validate feedback content
+				if (!content || content.length < 10) {
+					contentInput.focus();
+					contentInput.setCustomValidity('Please enter at least 10 characters of meaningful feedback');
+					contentInput.reportValidity();
+					return;
+				}
+				
+				// Check for meaningless/gibberish content using AI
+				contentInput.setCustomValidity('Validating feedback...');
+				try {
+					const validateRes = await fetch('/api/ai/validate', {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({ content })
+					});
+					
+					if (validateRes.ok) {
+						const validation = await validateRes.json();
+						if (validation.isMeaningless) {
+							contentInput.focus();
+							contentInput.setCustomValidity(`This feedback appears to be meaningless: ${validation.reason || 'Please provide meaningful feedback with clear content.'}`);
+							contentInput.reportValidity();
+							return;
+						}
+					}
+					contentInput.setCustomValidity('');
+				} catch (error) {
+					// Fallback to rule-based if AI fails
+					if (isMeaningless(content)) {
+						contentInput.focus();
+						contentInput.setCustomValidity('This feedback appears to be meaningless or gibberish. Please provide meaningful feedback with clear content.');
+						contentInput.reportValidity();
+						return;
+					}
+					contentInput.setCustomValidity('');
+				}
+				
+				// Validate source selection
+				if (!source) {
+					sourceSelect.focus();
+					sourceSelect.setCustomValidity('Please select a source');
+					sourceSelect.reportValidity();
+					return;
+				} else {
+					sourceSelect.setCustomValidity('');
+				}
+				
+				// If HTML5 validation passes, proceed
+				if (!form.checkValidity()) {
+					form.reportValidity();
+					return;
+				}
+
+				// Create new feedback item
+				const newFeedback = {
+					id: 'NEW-' + Date.now(),
+					source: source,
+					title: content.substring(0, 60) + (content.length > 60 ? '...' : ''),
+					content: content,
+					author: 'User',
+					timestamp: new Date().toISOString(),
+					metadata: {}
+				};
+
+				// Show loading state
+				const analyzeBtn = event.submitter;
+				const originalText = analyzeBtn.textContent;
+				analyzeBtn.textContent = '🤖 Analyzing with AI...';
+				analyzeBtn.disabled = true;
+
+				try {
+					// Use AI to analyze feedback
+					const analyzeRes = await fetch('/api/ai/analyze', {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({ 
+							content: newFeedback.content, 
+							source: newFeedback.source,
+							metadata: newFeedback.metadata 
+						})
+					});
+
+					let analysis;
+					if (analyzeRes.ok) {
+						analysis = await analyzeRes.json();
+					} else {
+						// Fallback to rule-based if AI fails
+						console.warn('AI analysis failed, using fallback');
+						const tempProcessed = processFeedback(newFeedback);
+						analysis = tempProcessed.analysis;
+					}
+
+					// Combine feedback with AI analysis
+					const processed = {
+						...newFeedback,
+						analysis: analysis
+					};
+
+					// Save to database if valid (not meaningless)
+					if (!analysis.isMeaningless) {
+						try {
+							console.log('Saving to database:', processed);
+							const saveRes = await fetch('/api/feedback/save', {
+								method: 'POST',
+								headers: { 'Content-Type': 'application/json' },
+								body: JSON.stringify(processed)
+							});
+							
+							const saveResult = await saveRes.json();
+							console.log('Save response:', saveResult);
+							
+							if (!saveRes.ok) {
+								console.error('Failed to save:', saveResult);
+							}
+						} catch (saveError) {
+							console.error('Error saving feedback:', saveError);
+						}
+					} else {
+						console.log('Feedback marked as meaningless, not saving');
+					}
+
+					// Show analysis
+					await showAnalysis(processed);
+
+					// Reload data from server to get updated list
+					await loadData(1);
+
+					// Clear form
+					document.getElementById('feedbackForm').reset();
+				} catch (error) {
+					console.error('Error analyzing feedback:', error);
+					alert('Error analyzing feedback. Please try again.');
+				} finally {
+					analyzeBtn.textContent = originalText;
+					analyzeBtn.disabled = false;
+				}
+			}
+
+			async function showAnalysis(feedback) {
+				const card = document.getElementById('analysisCard');
+				const content = document.getElementById('analysisContent');
+				
+				const sentimentClass = `sentiment-${feedback.analysis.sentiment}`;
+				const urgencyClass = feedback.analysis.urgencyScore >= 7 ? 'urgency-high' : 
+									feedback.analysis.urgencyScore >= 4 ? 'urgency-medium' : 'urgency-low';
+
+				// Show loading state
+				const isAI = feedback.analysis?.reasoning && feedback.analysis.reasoning !== 'Fallback analysis used' && feedback.analysis.reasoning !== 'Error occurred, fallback analysis used';
+				content.innerHTML = `
+					<div class="analysis-grid">
+						<div class="analysis-item">
+							<label>Sentiment</label>
+							<div>
+								<span class="sentiment-badge ${sentimentClass}">${feedback.analysis.sentiment}</span>
+							</div>
+						</div>
+						<div class="analysis-item">
+							<label>Value Score</label>
+							<div class="value">${feedback.analysis.valueScore}/10</div>
+						</div>
+						<div class="analysis-item">
+							<label>Urgency Score</label>
+							<div class="value ${urgencyClass}">${feedback.analysis.urgencyScore}/10</div>
+						</div>
+						<div class="analysis-item">
+							<label>Source</label>
+							<div>
+								<span class="source-badge source-${feedback.source}">${feedback.source}</span>
+							</div>
+						</div>
+					</div>
+					<div>
+						<label style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">Identified Themes</label>
+						<div class="themes-list">
+							${feedback.analysis.themes.map(theme => `<span class="theme-tag">${theme}</span>`).join('')}
+						</div>
+					</div>
+					<div class="explanation-section">
+						<h3>📋 Analysis Explanation</h3>
+						${isAI && feedback.analysis.reasoning ? 
+							`<p style="color: #666; margin-bottom: 16px; font-style: italic;">${feedback.analysis.reasoning}</p>` :
+							`<p style="color: #666; font-style: italic;">🤖 Generating AI-powered explanation...</p>`
+						}
+					</div>
+					<div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+						<label style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">Feedback Content</label>
+						<div style="color: #666; line-height: 1.6;">${feedback.content}</div>
+					</div>
+				`;
+
+				card.classList.add('active');
+
+				// Fetch AI-generated explanation (only if we don't already have AI analysis)
+				try {
+					let explanations = {};
+					const isAI = feedback.analysis?.reasoning && feedback.analysis.reasoning !== 'Fallback analysis used' && feedback.analysis.reasoning !== 'Error occurred, fallback analysis used';
+					
+					if (isAI) {
+						// Use the AI reasoning if available, otherwise fetch detailed explanation
+						explanations = {
+							sentiment: `AI determined this feedback has ${feedback.analysis.sentiment} sentiment (score: ${feedback.analysis.sentimentScore}) based on contextual analysis of the content.`,
+							valueScore: `AI assigned a value score of ${feedback.analysis.valueScore}/10 based on the importance and relevance of the feedback to product improvement.`,
+							urgencyScore: `AI assessed urgency at ${feedback.analysis.urgencyScore}/10 based on whether this feedback requires immediate attention or indicates blocking issues.`,
+							themes: `AI identified these themes: ${feedback.analysis.themes.join(', ')}. These were determined through contextual understanding of the feedback content.`,
+							summary: feedback.analysis.reasoning
+						};
+					} else {
+						// Fetch detailed explanation from AI
+						const explainRes = await fetch('/api/ai/explain', {
+							method: 'POST',
+							headers: { 'Content-Type': 'application/json' },
+							body: JSON.stringify({ feedback, analysis: feedback.analysis })
+						});
+
+						if (explainRes.ok) {
+							explanations = await explainRes.json();
+						} else {
+							// Fallback to rule-based explanations
+							explanations = {
+								sentiment: getSentimentExplanation(feedback.analysis.sentiment, feedback.analysis.sentimentScore),
+								valueScore: getValueScoreExplanation(feedback.analysis.valueScore, feedback.source),
+								urgencyScore: getUrgencyExplanation(feedback.analysis.urgencyScore, feedback.content),
+								themes: feedback.analysis.isMeaningless ? 
+									'⚠️ This feedback has been flagged as meaningless or gibberish content. It contains repetitive patterns, random character sequences, or lacks coherent meaning. It should be filtered out or marked as invalid.' :
+									`The feedback has been categorized into ${feedback.analysis.themes.length} theme(s): ${feedback.analysis.themes.join(', ')}. These themes were identified based on keywords and context within the feedback content.`
+							};
+						}
+					}
+
+					// Update explanation section with content
+					const explanationSection = content.querySelector('.explanation-section');
+					explanationSection.innerHTML = `
+						<h3>📋 Analysis Explanation</h3>
+						${isAI && feedback.analysis.reasoning ? `
+						<div class="explanation-item" style="margin-bottom: 20px; padding: 12px; background: #f9fafb; border-radius: 6px;">
+							<strong>Summary</strong>
+							<p>${feedback.analysis.reasoning}</p>
+						</div>
+						` : ''}
+						<div class="explanation-item">
+							<strong>Sentiment Analysis (${feedback.analysis.sentiment})</strong>
+							<p>${explanations.sentiment || getSentimentExplanation(feedback.analysis.sentiment, feedback.analysis.sentimentScore)}</p>
+						</div>
+						<div class="explanation-item">
+							<strong>Value Score (${feedback.analysis.valueScore}/10)</strong>
+							<p>${explanations.valueScore || getValueScoreExplanation(feedback.analysis.valueScore, feedback.source)}</p>
+						</div>
+						<div class="explanation-item">
+							<strong>Urgency Score (${feedback.analysis.urgencyScore}/10)</strong>
+							<p>${explanations.urgencyScore || getUrgencyExplanation(feedback.analysis.urgencyScore, feedback.content)}</p>
+						</div>
+						<div class="explanation-item">
+							<strong>Themes Detected</strong>
+							<p>${explanations.themes || (feedback.analysis.isMeaningless ? 
+								'⚠️ This feedback has been flagged as meaningless or gibberish content. It contains repetitive patterns, random character sequences, or lacks coherent meaning. It should be filtered out or marked as invalid.' :
+								`The feedback has been categorized into ${feedback.analysis.themes.length} theme(s): ${feedback.analysis.themes.join(', ')}. These themes were identified based on keywords and context within the feedback content.`)
+							}</p>
+						</div>
+						${explanations.summary ? `
+						<div class="explanation-item" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #e5e7eb;">
+							<strong>Overall Summary</strong>
+							<p>${explanations.summary}</p>
+						</div>
+						` : ''}
+					`;
+				} catch (error) {
+					// Fallback to rule-based if AI fails
+					const explanationSection = content.querySelector('.explanation-section');
+					explanationSection.innerHTML = `
+						<h3>📋 Analysis Explanation</h3>
+						<div class="explanation-item">
+							<strong>Sentiment Analysis (${feedback.analysis.sentiment})</strong>
+							<p>${getSentimentExplanation(feedback.analysis.sentiment, feedback.analysis.sentimentScore)}</p>
+						</div>
+						<div class="explanation-item">
+							<strong>Value Score (${feedback.analysis.valueScore}/10)</strong>
+							<p>${getValueScoreExplanation(feedback.analysis.valueScore, feedback.source)}</p>
+						</div>
+						<div class="explanation-item">
+							<strong>Urgency Score (${feedback.analysis.urgencyScore}/10)</strong>
+							<p>${getUrgencyExplanation(feedback.analysis.urgencyScore, feedback.content)}</p>
+						</div>
+						<div class="explanation-item">
+							<strong>Themes Detected</strong>
+							<p>${feedback.analysis.isMeaningless ? 
+								'⚠️ This feedback has been flagged as meaningless or gibberish content. It contains repetitive patterns, random character sequences, or lacks coherent meaning. It should be filtered out or marked as invalid.' :
+								`The feedback has been categorized into ${feedback.analysis.themes.length} theme(s): ${feedback.analysis.themes.join(', ')}. These themes were identified based on keywords and context within the feedback content.`
+							}</p>
+						</div>
+					`;
+				}
+			}
+
+			function renderTable() {
+				const tbody = document.getElementById('feedbackTableBody');
+				
+				if (allFeedback.length === 0) {
+					tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #999;">No feedback items yet</td></tr>';
+					return;
+				}
+
+				tbody.innerHTML = allFeedback.map(item => {
+					const sentimentClass = `sentiment-${item.analysis.sentiment}`;
+					const urgencyClass = item.analysis.urgencyScore >= 7 ? 'urgency-high' : 
+										item.analysis.urgencyScore >= 4 ? 'urgency-medium' : 'urgency-low';
+					const date = new Date(item.timestamp).toLocaleDateString();
+					const isSelected = selectedFeedbackId === item.id;
+					
+					return `
+						<tr class="${isSelected ? 'selected' : ''}" onclick="selectFeedback('${item.id}')">
+							<td>
+								<div class="feedback-title">${item.title}</div>
+								<div class="feedback-preview">${item.content}</div>
+							</td>
+							<td><span class="source-badge source-${item.source}">${item.source}</span></td>
+							<td><span class="sentiment-badge ${sentimentClass}">${item.analysis.sentiment}</span></td>
+							<td><span class="${urgencyClass}">${item.analysis.urgencyScore}/10</span></td>
+							<td>${item.analysis.valueScore}/10</td>
+							<td>${item.analysis.themes.join(', ')}</td>
+							<td>${date}</td>
+						</tr>
+					`;
+				}).join('');
+			}
+
+			async function selectFeedback(id) {
+				selectedFeedbackId = id;
+				const feedback = allFeedback.find(f => f.id === id);
+				if (feedback) {
+					// If feedback doesn't have AI analysis yet (old data), analyze it
+					if (!feedback.analysis || !feedback.analysis.reasoning) {
+						try {
+							const analyzeRes = await fetch('/api/ai/analyze', {
+								method: 'POST',
+								headers: { 'Content-Type': 'application/json' },
+								body: JSON.stringify({ 
+									content: feedback.content, 
+									source: feedback.source,
+									metadata: feedback.metadata || {}
+								})
+							});
+
+							if (analyzeRes.ok) {
+								const analysis = await analyzeRes.json();
+								feedback.analysis = analysis;
+							}
+						} catch (error) {
+							console.error('Error re-analyzing feedback:', error);
+						}
+					}
+					await showAnalysis(feedback);
+					renderTable(); // Re-render to show selected state
+				}
+			}
+
+			function getSentimentExplanation(sentiment, score) {
+				if (sentiment === 'positive') {
+					if (score >= 3) {
+						return 'The feedback contains strongly positive language and indicates high satisfaction. Keywords like "great", "excellent", "amazing", "love", or "thank" were detected, suggesting the user is very happy with the product or service.';
+					} else {
+						return 'The feedback shows positive sentiment with optimistic language. Positive keywords were identified, indicating general satisfaction or appreciation.';
+					}
+				} else if (sentiment === 'negative') {
+					if (score <= -3) {
+						return 'The feedback contains strongly negative language indicating significant dissatisfaction or problems. Keywords like "bug", "error", "issue", "broken", "fail", or "problem" were detected, suggesting urgent attention may be needed.';
+					} else {
+						return 'The feedback shows negative sentiment with concerning language. Negative keywords were identified, indicating problems, issues, or dissatisfaction that should be addressed.';
+					}
+				} else {
+					return 'The feedback has a neutral sentiment, containing neither strongly positive nor negative language. It may be informational, a question, or balanced feedback that requires contextual understanding.';
+				}
+			}
+
+			function getValueScoreExplanation(score, source) {
+				const sourceNames = {
+					'support': 'Customer Support',
+					'email': 'Email',
+					'github': 'GitHub',
+					'discord': 'Discord',
+					'twitter': 'Twitter/X',
+					'forum': 'Community Forum'
+				};
+				
+				const sourceName = sourceNames[source] || source;
+				let baseExplanation = `Based on source credibility (${sourceName}), `;
+				
+				if (score >= 8) {
+					return baseExplanation + `engagement metrics, and urgency indicators, this feedback has a very high value score (${score}/10). This indicates it should be prioritized highly as it likely represents a critical issue, high-impact feature request, or feedback from a credible source with significant engagement.`;
+				} else if (score >= 6) {
+					return baseExplanation + `engagement metrics, and urgency indicators, this feedback has a high value score (${score}/10). It represents important feedback that should be considered for prioritization, likely containing meaningful insights or addressing significant concerns.`;
+				} else if (score >= 4) {
+					return baseExplanation + `engagement metrics, and urgency indicators, this feedback has a moderate value score (${score}/10). It provides useful information and should be reviewed, but may not require immediate action unless it aligns with current product priorities.`;
+				} else {
+					return baseExplanation + `engagement metrics, and urgency indicators, this feedback has a lower value score (${score}/10). While still valuable for tracking user sentiment, it may be less urgent or may have limited engagement, suggesting it can be addressed in routine updates.`;
+				}
+			}
+
+			function getUrgencyExplanation(score, content) {
+				const lowerContent = content.toLowerCase();
+				const hasUrgentKeywords = ['urgent', 'critical', 'blocking', 'down', 'broken', 'asap', 'immediately', 'production'].some(word => lowerContent.includes(word));
+				
+				if (score >= 8) {
+					return `This feedback has a very high urgency score (${score}/10) indicating critical issues that require immediate attention. ${hasUrgentKeywords ? 'Urgent keywords were detected in the content.' : 'The negative sentiment combined with priority indicators suggests this is blocking production use or causing significant problems.'} This should be escalated and addressed as soon as possible.`;
+				} else if (score >= 6) {
+					return `This feedback has a high urgency score (${score}/10) indicating important issues that should be addressed in the near term. ${hasUrgentKeywords ? 'Urgent language was detected.' : 'The sentiment and context suggest this needs prompt attention.'} Consider prioritizing this in the next sprint or update cycle.`;
+				} else if (score >= 4) {
+					return `This feedback has a moderate urgency score (${score}/10). While not immediately critical, it represents feedback that should be tracked and addressed in regular development cycles. Plan to include this in upcoming roadmaps or updates.`;
+				} else {
+					return `This feedback has a low urgency score (${score}/10), indicating it's informational or can be addressed as part of routine improvements. While valuable for product insights, it doesn't require immediate action and can be incorporated into longer-term planning.`;
+				}
+			}
+
+			// Load data on page load
+			loadData();
+		</script>
+	</body>
+</html>
