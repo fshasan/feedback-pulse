@@ -6,6 +6,14 @@ Feedback Pulse helps product teams aggregate, analyze, and prioritize feedback f
 
 **Feedback Input Approach:** Instead of integrating with third-party APIs, Feedback Pulse uses a manual input system where users can enter feedback through a text field and select the source via a dropdown menu. This approach provides flexibility and control, allowing users to analyze feedback from any source without requiring API keys, webhooks, or complex integrations. Simply paste or type the feedback content, select the appropriate source channel, and click "Analyze" to get instant AI-powered insights.
 
+**Assignment Compliance:** This prototype meets all requirements for the Cloudflare Product Manager Intern Assignment:
+- ✅ Deployed on Cloudflare Workers
+- ✅ Uses 3 Cloudflare Developer Platform products (Workers, D1, Workers AI)
+- ✅ Uses mock data (no third-party API integrations required)
+- ✅ Includes architecture overview explaining product choices and rationale
+- ✅ Extracts themes, urgency, value, and sentiment from feedback
+- ✅ Provides interactive dashboard for aggregated feedback analysis
+
 ## ✨ Features
 
 ### 🤖 AI-Powered Analysis
@@ -40,6 +48,19 @@ Feedback Pulse helps product teams aggregate, analyze, and prioritize feedback f
 - **Community Forum** - Forum posts and discussions
 
 ## 🏗️ Architecture
+
+### Cloudflare Products Used
+
+This prototype uses **3 Cloudflare Developer Platform products**:
+
+1. **Cloudflare Workers** (Runtime)
+   - **Why:** Serverless edge computing platform that provides global distribution, zero cold starts, and automatic scaling. Perfect for building APIs and serving static assets without managing infrastructure. Workers handle all backend logic, API endpoints, and serve the frontend dashboard.
+
+2. **Cloudflare D1** (Database)
+   - **Why:** Serverless SQLite database that provides persistent storage without database management overhead. D1 integrates seamlessly with Workers, offers automatic backups, and scales automatically. Essential for storing feedback data persistently across deployments and server restarts.
+
+3. **Cloudflare Workers AI** (AI Inference)
+   - **Why:** Edge AI platform that runs Llama models directly on Cloudflare's network, eliminating the need for external AI APIs or API keys. Provides low-latency AI inference, no rate limits, and integrates natively with Workers. Enables contextual analysis using Meta's Llama 3.1 models without additional infrastructure.
 
 ### Technology Stack
 
