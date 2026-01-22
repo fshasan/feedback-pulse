@@ -4,6 +4,8 @@
 
 Feedback Pulse helps product teams aggregate, analyze, and prioritize feedback from various channels (Support, Discord, GitHub, Twitter, Email, Forums) using advanced AI analysis. The tool provides contextual understanding of feedback beyond simple keyword matching, enabling data-driven product decisions.
 
+**Feedback Input Approach:** Instead of integrating with third-party APIs, Feedback Pulse uses a manual input system where users can enter feedback through a text field and select the source via a dropdown menu. This approach provides flexibility and control, allowing users to analyze feedback from any source without requiring API keys, webhooks, or complex integrations. Simply paste or type the feedback content, select the appropriate source channel, and click "Analyze" to get instant AI-powered insights.
+
 ## ✨ Features
 
 ### 🤖 AI-Powered Analysis
@@ -14,6 +16,7 @@ Feedback Pulse helps product teams aggregate, analyze, and prioritize feedback f
 - **Detailed Explanations**: AI-generated reasoning for each analysis decision with contextual insights
 
 ### 📊 Interactive Dashboard
+- **Manual Feedback Input**: Simple text field and source dropdown for entering feedback - no third-party API integrations required. Paste feedback from any source and analyze instantly.
 - **Real-time Feedback Submission**: Add and analyze new feedback instantly with immediate AI processing
 - **Advanced Filtering**: Filter by source, sentiment, or search by keywords with real-time results
 - **Sortable Tables**: Sort by date, sentiment, value score, or urgency with visual indicators

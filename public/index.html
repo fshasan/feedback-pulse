@@ -4,6 +4,7 @@
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<title>Feedback Aggregation Dashboard</title>
+		<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 		<style>
 			* {
 				margin: 0;
@@ -49,11 +50,18 @@
 				font-size: 16px;
 			}
 
+			.bottom-cards-container {
+				display: flex;
+				flex-direction: column;
+				gap: 20px;
+				margin-top: 20px;
+			}
+
 			.form-card {
 				background: white;
 				border-radius: 12px;
 				padding: 24px;
-				margin-bottom: 20px;
+				margin-bottom: 0;
 				box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 			}
 
@@ -138,7 +146,7 @@
 				background: white;
 				border-radius: 12px;
 				padding: 24px;
-				margin-bottom: 20px;
+				margin-bottom: 0;
 				box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 				display: none;
 			}
@@ -146,6 +154,7 @@
 			.analysis-card.active {
 				display: block;
 			}
+
 
 			.analysis-card h2 {
 				font-size: 20px;
@@ -317,6 +326,97 @@
 				margin: 0;
 			}
 
+			.assessment-section {
+				margin-bottom: 20px;
+				padding-bottom: 20px;
+				border-bottom: 1px solid #bae6fd;
+			}
+
+			.assessment-section:last-child {
+				border-bottom: none;
+				margin-bottom: 0;
+				padding-bottom: 0;
+			}
+
+			.assessment-section-title {
+				font-size: 15px;
+				font-weight: 600;
+				color: #0e7490;
+				margin-bottom: 10px;
+				display: flex;
+				align-items: center;
+				gap: 8px;
+			}
+
+			.assessment-section-content {
+				color: #164e63;
+				line-height: 1.8;
+				font-size: 14px;
+			}
+
+			.assessment-metrics {
+				display: grid;
+				grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+				gap: 12px;
+				margin-top: 12px;
+			}
+
+			.assessment-metric {
+				background: rgba(255, 255, 255, 0.6);
+				padding: 12px;
+				border-radius: 6px;
+				border-left: 3px solid #67e8f9;
+			}
+
+			.assessment-metric-label {
+				font-size: 11px;
+				color: #64748b;
+				text-transform: uppercase;
+				letter-spacing: 0.5px;
+				margin-bottom: 4px;
+			}
+
+			.assessment-metric-value {
+				font-size: 16px;
+				font-weight: 600;
+				color: #0e7490;
+			}
+
+			.assessment-list {
+				list-style: none;
+				padding: 0;
+				margin: 10px 0 0 0;
+			}
+
+			.assessment-list li {
+				padding: 8px 0 8px 24px;
+				position: relative;
+				color: #164e63;
+				line-height: 1.6;
+			}
+
+			.assessment-list li::before {
+				content: "▸";
+				position: absolute;
+				left: 8px;
+				color: #67e8f9;
+				font-weight: bold;
+			}
+
+			.assessment-highlight {
+				background: rgba(103, 232, 249, 0.15);
+				padding: 12px;
+				border-radius: 6px;
+				border-left: 3px solid #0e7490;
+				margin-top: 12px;
+			}
+
+			.assessment-highlight strong {
+				color: #0e7490;
+				display: block;
+				margin-bottom: 4px;
+			}
+
 			@media (max-width: 900px) {
 				.analysis-grid {
 					grid-template-columns: repeat(2, 1fr);
@@ -413,6 +513,15 @@
 
 			tbody tr.selected {
 				background-color: #ede9fe;
+			}
+
+			tbody tr.spam-row {
+				background-color: #fee2e2;
+				opacity: 0.7;
+			}
+
+			tbody tr.spam-row:hover {
+				background-color: #fecaca;
 			}
 
 			.source-badge {
@@ -587,9 +696,106 @@
 				max-width: 300px;
 			}
 
+			.stats-card {
+				background: white;
+				border-radius: 12px;
+				padding: 24px;
+				margin-bottom: 20px;
+				box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+			}
+
+			.stats-card h2 {
+				font-size: 20px;
+				margin-bottom: 20px;
+				color: #333;
+				display: flex;
+				align-items: center;
+				gap: 8px;
+			}
+
+			.stats-grid {
+				display: grid;
+				grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+				gap: 20px;
+				margin-top: 20px;
+			}
+
+			.stat-item {
+				background: #f9fafb;
+				border-radius: 8px;
+				padding: 16px;
+			}
+
+			.stat-item h3 {
+				font-size: 14px;
+				color: #666;
+				margin-bottom: 12px;
+				text-transform: uppercase;
+				letter-spacing: 0.5px;
+			}
+
+			.stat-value {
+				font-size: 32px;
+				font-weight: bold;
+				color: #333;
+				margin-bottom: 8px;
+			}
+
+			.stat-label {
+				font-size: 12px;
+				color: #999;
+			}
+
+			.chart-container {
+				position: relative;
+				height: 250px;
+				margin-top: 10px;
+			}
+
+			.stats-summary {
+				display: grid;
+				grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+				gap: 16px;
+				margin-bottom: 24px;
+			}
+
+			.summary-box {
+				background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+				border: 1px solid #667eea30;
+				border-radius: 8px;
+				padding: 16px;
+				text-align: center;
+			}
+
+			.summary-box .number {
+				font-size: 28px;
+				font-weight: bold;
+				color: #667eea;
+				margin-bottom: 4px;
+			}
+
+			.summary-box .label {
+				font-size: 12px;
+				color: #666;
+				text-transform: uppercase;
+				letter-spacing: 0.5px;
+			}
+
 			@media (max-width: 768px) {
+				.bottom-cards-container {
+					grid-template-columns: 1fr;
+				}
+
 				.analysis-grid {
 					grid-template-columns: 1fr;
+				}
+
+				.stats-grid {
+					grid-template-columns: 1fr;
+				}
+
+				.stats-summary {
+					grid-template-columns: repeat(2, 1fr);
 				}
 
 				table {
@@ -613,45 +819,67 @@
 			<div id="error" class="error" style="display: none;"></div>
 
 			<div id="dashboard" style="display: none;">
-				<!-- Input Form -->
-				<div class="form-card">
-					<h2>Add New Feedback</h2>
-					<form id="feedbackForm" onsubmit="handleAnalyze(event)" novalidate>
-						<div class="form-group">
-							<label for="feedbackInput" class="required">Feedback Content</label>
-							<textarea 
-								id="feedbackInput" 
-								placeholder="Enter feedback text here..."
-								required
-								minlength="10"
-							></textarea>
+				<!-- Today's Statistics Card -->
+				<div class="stats-card">
+					<h2>📈 Today's Feedback Statistics</h2>
+					<div id="statsLoading" style="text-align: center; padding: 20px; color: #999;">
+						Loading statistics...
+					</div>
+					<div id="statsContent" style="display: none;">
+						<!-- Summary Boxes -->
+						<div class="stats-summary">
+							<div class="summary-box">
+								<div class="number" id="totalToday">0</div>
+								<div class="label">Total Today</div>
+							</div>
+							<div class="summary-box">
+								<div class="number" id="highUrgency">0</div>
+								<div class="label">High Urgency</div>
+							</div>
+							<div class="summary-box">
+								<div class="number" id="avgValueScore">0</div>
+								<div class="label">Avg Value Score</div>
+							</div>
+							<div class="summary-box">
+								<div class="number" id="avgUrgencyScore">0</div>
+								<div class="label">Avg Urgency Score</div>
+							</div>
 						</div>
-						<div class="form-group">
-							<label for="sourceSelect" class="required">Source</label>
-							<select id="sourceSelect" required>
-								<option value="">Select a source...</option>
-								<option value="support">Customer Support</option>
-								<option value="discord">Discord</option>
-								<option value="github">GitHub</option>
-								<option value="twitter">Twitter/X</option>
-								<option value="email">Email</option>
-								<option value="forum">Community Forum</option>
-							</select>
-						</div>
-						<button type="submit" class="analyze-btn">Analyze</button>
-					</form>
-				</div>
 
-				<!-- Analysis Card -->
-				<div class="analysis-card" id="analysisCard">
-					<h2>Analysis Results</h2>
-					<div id="analysisContent"></div>
+						<!-- Charts Grid -->
+						<div class="stats-grid">
+							<div class="stat-item">
+								<h3>Urgency Distribution</h3>
+								<div class="chart-container">
+									<canvas id="urgencyChart"></canvas>
+								</div>
+							</div>
+							<div class="stat-item">
+								<h3>Sentiment Distribution</h3>
+								<div class="chart-container">
+									<canvas id="sentimentChart"></canvas>
+								</div>
+							</div>
+							<div class="stat-item">
+								<h3>Source Distribution</h3>
+								<div class="chart-container">
+									<canvas id="sourceChart"></canvas>
+								</div>
+							</div>
+							<div class="stat-item">
+								<h3>Value Score Distribution</h3>
+								<div class="chart-container">
+									<canvas id="valueScoreChart"></canvas>
+								</div>
+							</div>
+						</div>
+					</div>
 				</div>
 
 				<!-- Feedback Table -->
 				<div class="table-card">
 					<div class="table-header">
-						<h2>All Feedback Items</h2>
+						<h2>📋 All Feedback Items</h2>
 						<span class="results-count" id="resultsCount"></span>
 					</div>
 					
@@ -711,6 +939,44 @@
 					
 					<!-- Pagination -->
 					<div class="pagination" id="pagination"></div>
+				</div>
+
+				<!-- Bottom Cards Container -->
+				<div class="bottom-cards-container">
+					<!-- Input Form -->
+					<div class="form-card">
+						<h2>➕ Add New Feedback</h2>
+						<form id="feedbackForm" onsubmit="handleAnalyze(event)" novalidate>
+							<div class="form-group">
+								<label for="feedbackInput" class="required">Feedback Content</label>
+								<textarea 
+									id="feedbackInput" 
+									placeholder="Enter feedback text here..."
+									required
+									minlength="10"
+								></textarea>
+							</div>
+							<div class="form-group">
+								<label for="sourceSelect" class="required">Source</label>
+								<select id="sourceSelect" required>
+									<option value="">Select a source...</option>
+									<option value="support">Customer Support</option>
+									<option value="discord">Discord</option>
+									<option value="github">GitHub</option>
+									<option value="twitter">Twitter/X</option>
+									<option value="email">Email</option>
+									<option value="forum">Community Forum</option>
+								</select>
+							</div>
+							<button type="submit" class="analyze-btn">Analyze</button>
+						</form>
+					</div>
+
+					<!-- Analysis Card -->
+					<div class="analysis-card" id="analysisCard">
+						<h2>🔍 Analysis Results</h2>
+						<div id="analysisContent"></div>
+					</div>
 				</div>
 			</div>
 		</div>
@@ -936,11 +1202,267 @@
 					renderTable();
 					renderPagination();
 					updateResultsCount();
+					
+					// Load today's statistics
+					loadTodayStats();
 
 				} catch (error) {
 					document.getElementById('loading').style.display = 'none';
 					document.getElementById('error').style.display = 'block';
 					document.getElementById('error').textContent = 'Error loading data: ' + error.message;
+				}
+			}
+
+			let chartInstances = {};
+
+			async function loadTodayStats() {
+				try {
+					// Get today's date range
+					const today = new Date();
+					today.setHours(0, 0, 0, 0);
+					const todayStart = today.toISOString();
+					const todayEnd = new Date(today.getTime() + 24 * 60 * 60 * 1000).toISOString();
+					
+					// Fetch all feedback (we'll filter by date on client side)
+					const response = await fetch('/api/feedback?limit=1000');
+					const data = await response.json();
+					const allData = data.data || data;
+					
+					// Filter today's feedback
+					const todayFeedback = allData.filter(f => {
+						const feedbackDate = new Date(f.timestamp);
+						return feedbackDate >= new Date(todayStart) && feedbackDate < new Date(todayEnd);
+					});
+					
+					if (todayFeedback.length === 0) {
+						document.getElementById('statsLoading').textContent = 'No feedback received today';
+						return;
+					}
+					
+					// Calculate statistics
+					const stats = calculateStats(todayFeedback);
+					
+					// Update summary boxes
+					document.getElementById('totalToday').textContent = stats.total;
+					document.getElementById('highUrgency').textContent = stats.highUrgency;
+					document.getElementById('avgValueScore').textContent = stats.avgValueScore.toFixed(1);
+					document.getElementById('avgUrgencyScore').textContent = stats.avgUrgencyScore.toFixed(1);
+					
+					// Show content and hide loading
+					document.getElementById('statsLoading').style.display = 'none';
+					document.getElementById('statsContent').style.display = 'block';
+					
+					// Render charts
+					renderCharts(stats);
+					
+				} catch (error) {
+					console.error('Error loading statistics:', error);
+					document.getElementById('statsLoading').textContent = 'Error loading statistics';
+				}
+			}
+
+			function calculateStats(feedback) {
+				const stats = {
+					total: feedback.length,
+					highUrgency: 0,
+					urgencyDistribution: { low: 0, medium: 0, high: 0 },
+					sentimentDistribution: { positive: 0, neutral: 0, negative: 0 },
+					sourceDistribution: {},
+					valueScoreRanges: { '0-2': 0, '3-5': 0, '6-8': 0, '9-10': 0 },
+					totalValueScore: 0,
+					totalUrgencyScore: 0
+				};
+				
+				feedback.forEach(f => {
+					const analysis = f.analysis || {};
+					
+					// Urgency
+					const urgencyScore = analysis.urgencyScore || 0;
+					stats.totalUrgencyScore += urgencyScore;
+					if (urgencyScore >= 7) {
+						stats.highUrgency++;
+						stats.urgencyDistribution.high++;
+					} else if (urgencyScore >= 4) {
+						stats.urgencyDistribution.medium++;
+					} else {
+						stats.urgencyDistribution.low++;
+					}
+					
+					// Sentiment
+					const sentiment = analysis.sentiment || 'neutral';
+					stats.sentimentDistribution[sentiment] = (stats.sentimentDistribution[sentiment] || 0) + 1;
+					
+					// Source
+					const source = f.source || 'unknown';
+					stats.sourceDistribution[source] = (stats.sourceDistribution[source] || 0) + 1;
+					
+					// Value Score
+					const valueScore = analysis.valueScore || 0;
+					stats.totalValueScore += valueScore;
+					if (valueScore <= 2) stats.valueScoreRanges['0-2']++;
+					else if (valueScore <= 5) stats.valueScoreRanges['3-5']++;
+					else if (valueScore <= 8) stats.valueScoreRanges['6-8']++;
+					else stats.valueScoreRanges['9-10']++;
+				});
+				
+				stats.avgValueScore = stats.total > 0 ? stats.totalValueScore / stats.total : 0;
+				stats.avgUrgencyScore = stats.total > 0 ? stats.totalUrgencyScore / stats.total : 0;
+				
+				return stats;
+			}
+
+			function renderCharts(stats) {
+				// Destroy existing charts
+				Object.values(chartInstances).forEach(chart => {
+					if (chart) chart.destroy();
+				});
+				chartInstances = {};
+				
+				// Urgency Distribution Chart
+				const urgencyCtx = document.getElementById('urgencyChart');
+				if (urgencyCtx) {
+					chartInstances.urgency = new Chart(urgencyCtx, {
+						type: 'doughnut',
+						data: {
+							labels: ['Low (0-3)', 'Medium (4-6)', 'High (7-10)'],
+							datasets: [{
+								data: [
+									stats.urgencyDistribution.low,
+									stats.urgencyDistribution.medium,
+									stats.urgencyDistribution.high
+								],
+								backgroundColor: [
+									'#10b981',
+									'#f59e0b',
+									'#ef4444'
+								]
+							}]
+						},
+						options: {
+							responsive: true,
+							maintainAspectRatio: false,
+							plugins: {
+								legend: {
+									position: 'bottom'
+								}
+							}
+						}
+					});
+				}
+				
+				// Sentiment Distribution Chart
+				const sentimentCtx = document.getElementById('sentimentChart');
+				if (sentimentCtx) {
+					chartInstances.sentiment = new Chart(sentimentCtx, {
+						type: 'pie',
+						data: {
+							labels: ['Positive', 'Neutral', 'Negative'],
+							datasets: [{
+								data: [
+									stats.sentimentDistribution.positive,
+									stats.sentimentDistribution.neutral,
+									stats.sentimentDistribution.negative
+								],
+								backgroundColor: [
+									'#10b981',
+									'#6b7280',
+									'#ef4444'
+								]
+							}]
+						},
+						options: {
+							responsive: true,
+							maintainAspectRatio: false,
+							plugins: {
+								legend: {
+									position: 'bottom'
+								}
+							}
+						}
+					});
+				}
+				
+				// Source Distribution Chart
+				const sourceCtx = document.getElementById('sourceChart');
+				if (sourceCtx) {
+					const sourceLabels = Object.keys(stats.sourceDistribution);
+					const sourceData = Object.values(stats.sourceDistribution);
+					const sourceColors = [
+						'#667eea', '#764ba2', '#f093fb', '#4facfe',
+						'#43e97b', '#fa709a'
+					];
+					
+					chartInstances.source = new Chart(sourceCtx, {
+						type: 'bar',
+						data: {
+							labels: sourceLabels.map(s => s.charAt(0).toUpperCase() + s.slice(1)),
+							datasets: [{
+								label: 'Feedback Count',
+								data: sourceData,
+								backgroundColor: sourceColors.slice(0, sourceLabels.length)
+							}]
+						},
+						options: {
+							responsive: true,
+							maintainAspectRatio: false,
+							plugins: {
+								legend: {
+									display: false
+								}
+							},
+							scales: {
+								y: {
+									beginAtZero: true,
+									ticks: {
+										stepSize: 1
+									}
+								}
+							}
+						}
+					});
+				}
+				
+				// Value Score Distribution Chart
+				const valueCtx = document.getElementById('valueScoreChart');
+				if (valueCtx) {
+					chartInstances.valueScore = new Chart(valueCtx, {
+						type: 'bar',
+						data: {
+							labels: ['0-2', '3-5', '6-8', '9-10'],
+							datasets: [{
+								label: 'Feedback Count',
+								data: [
+									stats.valueScoreRanges['0-2'],
+									stats.valueScoreRanges['3-5'],
+									stats.valueScoreRanges['6-8'],
+									stats.valueScoreRanges['9-10']
+								],
+								backgroundColor: [
+									'#fca5a5',
+									'#fcd34d',
+									'#86efac',
+									'#34d399'
+								]
+							}]
+						},
+						options: {
+							responsive: true,
+							maintainAspectRatio: false,
+							plugins: {
+								legend: {
+									display: false
+								}
+							},
+							scales: {
+								y: {
+									beginAtZero: true,
+									ticks: {
+										stepSize: 1
+									}
+								}
+							}
+						}
+					});
 				}
 			}
 			
@@ -1069,7 +1591,11 @@
 					
 					if (validateRes.ok) {
 						const validation = await validateRes.json();
-						if (validation.isMeaningless) {
+						if (validation.isSpam) {
+							// Spam detected - still proceed but show warning
+							alert(`⚠️ Warning: This content has been classified as spam or offensive. It will be stored in the database but no analysis will be performed. Reason: ${validation.reason || 'Content appears to be spam or irrelevant'}`);
+							// Continue to save spam record
+						} else if (validation.isMeaningless) {
 							contentInput.focus();
 							contentInput.setCustomValidity(`This feedback appears to be meaningless: ${validation.reason || 'Please provide meaningful feedback with clear content.'}`);
 							contentInput.reportValidity();
@@ -1149,8 +1675,8 @@
 						analysis: analysis
 					};
 
-					// Save to database if valid (not meaningless)
-					if (!analysis.isMeaningless) {
+					// Save to database (including spam - spam is stored but not analyzed)
+					if (!analysis.isMeaningless || analysis.isSpam) {
 						try {
 							console.log('Saving to database:', processed);
 							const saveRes = await fetch('/api/feedback/save', {
@@ -1164,6 +1690,8 @@
 							
 							if (!saveRes.ok) {
 								console.error('Failed to save:', saveResult);
+							} else if (analysis.isSpam) {
+								console.log('Spam feedback saved to database (no analysis performed)');
 							}
 						} catch (saveError) {
 							console.error('Error saving feedback:', saveError);
@@ -1172,8 +1700,29 @@
 						console.log('Feedback marked as meaningless, not saving');
 					}
 
-					// Show analysis
-					await showAnalysis(processed);
+					// Show analysis (or spam message if spam)
+					if (analysis.isSpam) {
+						// Show spam message instead of analysis
+						const card = document.getElementById('analysisCard');
+						const content = document.getElementById('analysisContent');
+						content.innerHTML = `
+							<div style="padding: 20px; text-align: center;">
+								<div style="font-size: 48px; margin-bottom: 16px;">🚫</div>
+								<h3 style="color: #ef4444; margin-bottom: 12px;">Spam/Offensive Content Detected</h3>
+								<p style="color: #666; margin-bottom: 16px;">
+									This feedback has been classified as spam or offensive content. 
+									The record has been stored in the database for moderation purposes, 
+									but no analysis has been performed.
+								</p>
+								<div style="background: #fee2e2; border: 1px solid #fca5a5; border-radius: 8px; padding: 12px; margin-top: 16px;">
+									<strong>Reason:</strong> ${analysis.reasoning || 'Content appears to be spam, irrelevant, or offensive'}
+								</div>
+							</div>
+						`;
+						card.classList.add('active');
+					} else {
+						await showAnalysis(processed);
+					}
 
 					// Reload data from server to get updated list
 					await loadData(1);
@@ -1244,7 +1793,7 @@
 					<!-- Overall Summary Card (long) at bottom -->
 					<div class="overall-summary-card" id="overallSummaryCard" style="display: none;">
 						<h4>📊 Overall Assessment</h4>
-						<p id="overallSummaryText"></p>
+						<div id="overallSummaryContent"></div>
 					</div>
 				`;
 
@@ -1261,7 +1810,7 @@
 							urgencyScore: `Urgency level ${feedback.analysis.urgencyScore}/10 - ${feedback.analysis.urgencyScore >= 7 ? 'requires immediate attention' : feedback.analysis.urgencyScore >= 4 ? 'should be addressed soon' : 'can be planned for later'}.`,
 							themes: `Identified: ${feedback.analysis.themes.join(', ')}.`,
 							summary: feedback.analysis.reasoning,
-							overall: `This ${feedback.source} feedback expresses ${feedback.analysis.sentiment} sentiment about ${feedback.analysis.themes.join(' and ')}. With a value score of ${feedback.analysis.valueScore}/10 and urgency of ${feedback.analysis.urgencyScore}/10, it ${feedback.analysis.urgencyScore >= 7 ? 'requires immediate attention' : feedback.analysis.urgencyScore >= 4 ? 'should be prioritized in upcoming sprints' : 'can be addressed in regular development cycles'}.`
+							overall: `This feedback from ${feedback.source.charAt(0).toUpperCase() + feedback.source.slice(1)} represents a ${feedback.analysis.sentiment} sentiment response regarding ${feedback.analysis.themes.join(', ')}. The comprehensive analysis reveals a value score of ${feedback.analysis.valueScore}/10, indicating ${feedback.analysis.valueScore >= 8 ? 'exceptional business value and high priority for product improvement' : feedback.analysis.valueScore >= 6 ? 'significant value that warrants attention' : feedback.analysis.valueScore >= 4 ? 'moderate value that should be considered' : 'lower priority but still valuable insights'}. The urgency score of ${feedback.analysis.urgencyScore}/10 suggests this feedback ${feedback.analysis.urgencyScore >= 8 ? 'requires immediate escalation and urgent resolution as it likely impacts production systems or critical user workflows' : feedback.analysis.urgencyScore >= 6 ? 'should be prioritized in the next sprint cycle and addressed promptly to prevent escalation' : feedback.analysis.urgencyScore >= 4 ? 'can be planned for upcoming development cycles and tracked for future implementation' : 'is informational and can be incorporated into long-term product planning'}. Based on the ${feedback.analysis.sentiment} sentiment and identified themes, this feedback ${feedback.analysis.sentiment === 'negative' ? 'highlights areas requiring improvement and should be reviewed by the product and engineering teams' : feedback.analysis.sentiment === 'positive' ? 'demonstrates successful features or positive user experiences that can inform future product decisions' : 'provides neutral insights that contribute to product understanding and user needs'}.`
 						};
 					} else {
 						// Fetch detailed explanation from AI
@@ -1282,7 +1831,7 @@
 								themes: feedback.analysis.isMeaningless ? 
 									'⚠️ Flagged as meaningless content.' :
 									`Identified: ${feedback.analysis.themes.join(', ')}.`,
-								overall: `This feedback from ${feedback.source} has been analyzed with ${feedback.analysis.sentiment} sentiment, value score of ${feedback.analysis.valueScore}/10, and urgency of ${feedback.analysis.urgencyScore}/10.`
+								overall: `This feedback from ${feedback.source.charAt(0).toUpperCase() + feedback.source.slice(1)} has been comprehensively analyzed through our AI-powered system. The analysis reveals a ${feedback.analysis.sentiment} sentiment classification with a sentiment score of ${feedback.analysis.sentimentScore}, indicating ${feedback.analysis.sentiment === 'negative' ? 'user concerns or dissatisfaction that require attention' : feedback.analysis.sentiment === 'positive' ? 'positive user experience and satisfaction' : 'neutral or balanced feedback'}. The value score of ${feedback.analysis.valueScore}/10 reflects ${feedback.analysis.valueScore >= 8 ? 'exceptional business impact and strategic importance' : feedback.analysis.valueScore >= 6 ? 'high value for product development priorities' : feedback.analysis.valueScore >= 4 ? 'moderate value that contributes to product insights' : 'baseline value for tracking purposes'}. With an urgency score of ${feedback.analysis.urgencyScore}/10, this feedback ${feedback.analysis.urgencyScore >= 8 ? 'demands immediate action and should be escalated to the appropriate teams' : feedback.analysis.urgencyScore >= 6 ? 'warrants prompt attention in upcoming planning cycles' : feedback.analysis.urgencyScore >= 4 ? 'can be scheduled for regular development sprints' : 'is suitable for long-term roadmap consideration'}. The identified themes (${feedback.analysis.themes.join(', ')}) help categorize this feedback and route it to the relevant product areas for appropriate handling and response.`
 							};
 						}
 					}
@@ -1294,11 +1843,11 @@
 					document.getElementById('urgencyExplanation').innerHTML = explanations.urgencyScore || getUrgencyExplanation(feedback.analysis.urgencyScore, feedback.content);
 					document.getElementById('themesExplanation').innerHTML = explanations.themes || `Identified: ${feedback.analysis.themes.join(', ')}.`;
 					
-					// Show overall summary
+					// Show overall summary with comprehensive structure
 					const overallCard = document.getElementById('overallSummaryCard');
-					const overallText = document.getElementById('overallSummaryText');
-					if (explanations.overall || explanations.summary) {
-						overallText.innerHTML = explanations.overall || `Based on the analysis: ${explanations.summary}`;
+					const overallContent = document.getElementById('overallSummaryContent');
+					if (explanations.overall || explanations.summary || feedback.analysis) {
+						overallContent.innerHTML = generateComprehensiveAssessment(feedback, explanations);
 						overallCard.style.display = 'block';
 					}
 					
@@ -1312,12 +1861,168 @@
 						'⚠️ Flagged as meaningless content.' :
 						`Identified: ${feedback.analysis.themes.join(', ')}.`;
 					
-					// Show overall summary
+					// Show overall summary with comprehensive structure
 					const overallCard = document.getElementById('overallSummaryCard');
-					const overallText = document.getElementById('overallSummaryText');
-					overallText.innerHTML = `This feedback from ${feedback.source} has been analyzed with ${feedback.analysis.sentiment} sentiment, value score of ${feedback.analysis.valueScore}/10, and urgency of ${feedback.analysis.urgencyScore}/10.`;
+					const overallContent = document.getElementById('overallSummaryContent');
+					overallContent.innerHTML = generateComprehensiveAssessment(feedback, {});
 					overallCard.style.display = 'block';
 				}
+			}
+
+			function generateComprehensiveAssessment(feedback, explanations) {
+				const analysis = feedback.analysis || {};
+				const source = feedback.source.charAt(0).toUpperCase() + feedback.source.slice(1);
+				
+				// Determine priority level
+				const getPriorityLevel = () => {
+					if (analysis.urgencyScore >= 8) return { level: 'Critical', color: '#ef4444', icon: '🔴' };
+					if (analysis.urgencyScore >= 6) return { level: 'High', color: '#f59e0b', icon: '🟠' };
+					if (analysis.urgencyScore >= 4) return { level: 'Medium', color: '#3b82f6', icon: '🔵' };
+					return { level: 'Low', color: '#10b981', icon: '🟢' };
+				};
+				
+				const priority = getPriorityLevel();
+				
+				// Determine value category
+				const getValueCategory = () => {
+					if (analysis.valueScore >= 8) return 'Exceptional - Strategic importance with high business impact';
+					if (analysis.valueScore >= 6) return 'High - Significant value for product development';
+					if (analysis.valueScore >= 4) return 'Moderate - Contributes valuable product insights';
+					return 'Baseline - Useful for tracking and trend analysis';
+				};
+				
+				// Determine recommended action
+				const getRecommendedAction = () => {
+					if (analysis.urgencyScore >= 8) {
+						return 'Immediate escalation required. Assign to engineering team lead and product manager. Schedule emergency review meeting.';
+					}
+					if (analysis.urgencyScore >= 6) {
+						return 'Prioritize in next sprint planning. Assign to relevant team. Set target resolution date within 2 weeks.';
+					}
+					if (analysis.urgencyScore >= 4) {
+						return 'Include in upcoming development cycles. Add to product backlog. Review during quarterly planning.';
+					}
+					return 'Track for long-term roadmap consideration. Monitor for pattern emergence. Include in annual review.';
+				};
+				
+				// Determine sentiment impact
+				const getSentimentImpact = () => {
+					if (analysis.sentiment === 'negative') {
+						return 'This negative sentiment indicates user dissatisfaction or pain points that need immediate attention to prevent churn and maintain customer satisfaction.';
+					}
+					if (analysis.sentiment === 'positive') {
+						return 'This positive sentiment highlights successful features or positive user experiences that can inform future product decisions and marketing strategies.';
+					}
+					return 'This neutral sentiment provides balanced insights that contribute to product understanding without indicating immediate concerns or exceptional satisfaction.';
+				};
+				
+				return `
+					<div class="assessment-section">
+						<div class="assessment-section-title">📋 Executive Summary</div>
+						<div class="assessment-section-content">
+							This feedback from <strong>${source}</strong> has been comprehensively analyzed through our AI-powered system. 
+							${explanations.summary || analysis.reasoning || 'The analysis provides detailed insights into sentiment, value, urgency, and thematic categorization.'}
+						</div>
+					</div>
+
+					<div class="assessment-section">
+						<div class="assessment-section-title">💭 Sentiment Analysis</div>
+						<div class="assessment-section-content">
+							<div class="assessment-metrics">
+								<div class="assessment-metric">
+									<div class="assessment-metric-label">Sentiment</div>
+									<div class="assessment-metric-value" style="text-transform: capitalize;">${analysis.sentiment || 'Neutral'}</div>
+								</div>
+								<div class="assessment-metric">
+									<div class="assessment-metric-label">Sentiment Score</div>
+									<div class="assessment-metric-value">${analysis.sentimentScore || 0}</div>
+								</div>
+							</div>
+							<p style="margin-top: 12px;">${getSentimentImpact()}</p>
+							${analysis.sentiment === 'negative' ? '<div class="assessment-highlight"><strong>⚠️ Action Required:</strong> Negative sentiment suggests user pain points that may impact retention and satisfaction metrics.</div>' : ''}
+						</div>
+					</div>
+
+					<div class="assessment-section">
+						<div class="assessment-section-title">💎 Value Assessment</div>
+						<div class="assessment-section-content">
+							<div class="assessment-metrics">
+								<div class="assessment-metric">
+									<div class="assessment-metric-label">Value Score</div>
+									<div class="assessment-metric-value">${analysis.valueScore || 0}/10</div>
+								</div>
+								<div class="assessment-metric">
+									<div class="assessment-metric-label">Category</div>
+									<div class="assessment-metric-value" style="font-size: 13px;">${getValueCategory()}</div>
+								</div>
+							</div>
+							<p style="margin-top: 12px;">
+								The value score of <strong>${analysis.valueScore || 0}/10</strong> reflects ${getValueCategory().toLowerCase()}. 
+								This score considers source credibility, engagement metrics, business impact, and potential for product improvement.
+							</p>
+						</div>
+					</div>
+
+					<div class="assessment-section">
+						<div class="assessment-section-title">⚡ Urgency Evaluation</div>
+						<div class="assessment-section-content">
+							<div class="assessment-metrics">
+								<div class="assessment-metric">
+									<div class="assessment-metric-label">Urgency Score</div>
+									<div class="assessment-metric-value">${analysis.urgencyScore || 0}/10</div>
+								</div>
+								<div class="assessment-metric">
+									<div class="assessment-metric-label">Priority Level</div>
+									<div class="assessment-metric-value" style="color: ${priority.color};">${priority.icon} ${priority.level}</div>
+								</div>
+							</div>
+							<p style="margin-top: 12px;">
+								With an urgency score of <strong>${analysis.urgencyScore || 0}/10</strong>, this feedback ${analysis.urgencyScore >= 8 ? 'demands immediate action and should be escalated to the appropriate teams' : analysis.urgencyScore >= 6 ? 'warrants prompt attention in upcoming planning cycles' : analysis.urgencyScore >= 4 ? 'can be scheduled for regular development sprints' : 'is suitable for long-term roadmap consideration'}.
+							</p>
+							<div class="assessment-highlight">
+								<strong>📅 Recommended Timeline:</strong> ${getRecommendedAction()}
+							</div>
+						</div>
+					</div>
+
+					<div class="assessment-section">
+						<div class="assessment-section-title">🏷️ Theme Analysis</div>
+						<div class="assessment-section-content">
+							<p>The following themes have been identified:</p>
+							<ul class="assessment-list">
+								${(analysis.themes || []).map(theme => `<li><strong>${theme}</strong> - Related to core product functionality and user experience</li>`).join('')}
+							</ul>
+							<p style="margin-top: 12px;">
+								These themes help categorize this feedback and route it to the relevant product areas (Engineering, Product Management, Design, Support) for appropriate handling and response.
+							</p>
+						</div>
+					</div>
+
+					<div class="assessment-section">
+						<div class="assessment-section-title">🎯 Impact Assessment</div>
+						<div class="assessment-section-content">
+							<ul class="assessment-list">
+								<li><strong>Business Impact:</strong> ${analysis.valueScore >= 8 ? 'High strategic value with potential to significantly influence product direction' : analysis.valueScore >= 6 ? 'Moderate to high impact on product development priorities' : 'Baseline impact contributing to product insights'}</li>
+								<li><strong>User Impact:</strong> ${analysis.sentiment === 'negative' ? 'Negative user experience requiring immediate attention to prevent churn' : analysis.sentiment === 'positive' ? 'Positive user experience that validates product decisions' : 'Neutral impact providing balanced perspective'}</li>
+								<li><strong>Technical Complexity:</strong> ${analysis.themes && analysis.themes.some(t => ['API', 'Performance', 'Security', 'Bugs'].includes(t)) ? 'May require technical investigation and engineering resources' : 'Primarily requires product and design consideration'}</li>
+								<li><strong>Stakeholder Attention:</strong> ${analysis.urgencyScore >= 7 ? 'Requires executive visibility and cross-functional collaboration' : analysis.urgencyScore >= 5 ? 'Needs product manager and engineering lead review' : 'Standard tracking and monitoring sufficient'}</li>
+							</ul>
+						</div>
+					</div>
+
+					<div class="assessment-section">
+						<div class="assessment-section-title">✅ Recommended Next Steps</div>
+						<div class="assessment-section-content">
+							<ul class="assessment-list">
+								<li>${getRecommendedAction()}</li>
+								<li>Assign ownership to appropriate team based on identified themes (${(analysis.themes || []).join(', ')})</li>
+								<li>${analysis.sentiment === 'negative' ? 'Schedule user interview or follow-up to understand root cause' : 'Consider reaching out to user for additional context or feature validation'}</li>
+								<li>Track resolution progress and update stakeholders on status</li>
+								<li>Monitor for similar feedback patterns to identify systemic issues</li>
+							</ul>
+						</div>
+					</div>
+				`;
 			}
 
 			function renderTable() {
@@ -1329,23 +2034,25 @@
 				}
 
 				tbody.innerHTML = allFeedback.map(item => {
-					const sentimentClass = `sentiment-${item.analysis.sentiment}`;
-					const urgencyClass = item.analysis.urgencyScore >= 7 ? 'urgency-high' : 
-										item.analysis.urgencyScore >= 4 ? 'urgency-medium' : 'urgency-low';
+					const isSpam = item.analysis?.isSpam === true;
+					const sentimentClass = `sentiment-${item.analysis?.sentiment || 'neutral'}`;
+					const urgencyClass = item.analysis?.urgencyScore >= 7 ? 'urgency-high' : 
+										item.analysis?.urgencyScore >= 4 ? 'urgency-medium' : 'urgency-low';
 					const date = new Date(item.timestamp).toLocaleDateString();
 					const isSelected = selectedFeedbackId === item.id;
+					const rowClass = isSpam ? 'spam-row' : (isSelected ? 'selected' : '');
 					
 					return `
-						<tr class="${isSelected ? 'selected' : ''}" onclick="selectFeedback('${item.id}')">
+						<tr class="${rowClass}" onclick="selectFeedback('${item.id}')">
 							<td>
-								<div class="feedback-title">${item.title}</div>
+								<div class="feedback-title">${item.title} ${isSpam ? '<span style="background: #ef4444; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; margin-left: 8px;">SPAM</span>' : ''}</div>
 								<div class="feedback-preview">${item.content}</div>
 							</td>
 							<td><span class="source-badge source-${item.source}">${item.source}</span></td>
-							<td><span class="sentiment-badge ${sentimentClass}">${item.analysis.sentiment}</span></td>
-							<td><span class="${urgencyClass}">${item.analysis.urgencyScore}/10</span></td>
-							<td>${item.analysis.valueScore}/10</td>
-							<td>${item.analysis.themes.join(', ')}</td>
+							<td>${isSpam ? '<span style="background: #ef4444; color: white; padding: 4px 8px; border-radius: 12px; font-size: 11px;">SPAM</span>' : `<span class="sentiment-badge ${sentimentClass}">${item.analysis?.sentiment || 'neutral'}</span>`}</td>
+							<td>${isSpam ? '<span style="color: #999;">N/A</span>' : `<span class="${urgencyClass}">${item.analysis?.urgencyScore || 0}/10</span>`}</td>
+							<td>${isSpam ? '<span style="color: #999;">N/A</span>' : `${item.analysis?.valueScore || 0}/10`}</td>
+							<td>${isSpam ? '<span style="color: #999;">Spam</span>' : (item.analysis?.themes?.join(', ') || 'N/A')}</td>
 							<td>${date}</td>
 						</tr>
 					`;
@@ -1377,7 +2084,28 @@
 							console.error('Error re-analyzing feedback:', error);
 						}
 					}
-					await showAnalysis(feedback);
+					if (feedback.analysis?.isSpam) {
+						// Show spam message instead of analysis
+						const card = document.getElementById('analysisCard');
+						const content = document.getElementById('analysisContent');
+						content.innerHTML = `
+							<div style="padding: 20px; text-align: center;">
+								<div style="font-size: 48px; margin-bottom: 16px;">🚫</div>
+								<h3 style="color: #ef4444; margin-bottom: 12px;">Spam/Offensive Content Detected</h3>
+								<p style="color: #666; margin-bottom: 16px;">
+									This feedback has been classified as spam or offensive content. 
+									The record has been stored in the database for moderation purposes, 
+									but no analysis has been performed.
+								</p>
+								<div style="background: #fee2e2; border: 1px solid #fca5a5; border-radius: 8px; padding: 12px; margin-top: 16px;">
+									<strong>Reason:</strong> ${feedback.analysis.reasoning || 'Content appears to be spam, irrelevant, or offensive'}
+								</div>
+							</div>
+						`;
+						card.classList.add('active');
+					} else {
+						await showAnalysis(feedback);
+					}
 					renderTable(); // Re-render to show selected state
 				}
 			}

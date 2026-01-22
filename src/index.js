@@ -192,6 +192,49 @@ function checkIfMeaningless(text) {
 	return false;
 }
 
+// Helper function for rule-based spam/offensive detection (fallback)
+function checkIfSpam(text) {
+	const trimmed = text.trim().toLowerCase();
+	
+	// Common spam indicators
+	const spamPatterns = [
+		/buy now|click here|limited time|act now|special offer/i,
+		/free money|make money|get rich|work from home/i,
+		/viagra|cialis|pharmacy|pills|medication/i,
+		/casino|poker|betting|lottery|jackpot/i,
+		/bitcoin|crypto|investment|trading|forex/i,
+		/http:\/\/|https:\/\/|www\./i, // URLs (common in spam)
+		/click|link|website|visit|promo/i
+	];
+	
+	// Check for spam patterns
+	for (const pattern of spamPatterns) {
+		if (pattern.test(trimmed)) {
+			return true;
+		}
+	}
+	
+	// Check for excessive capitalization (spam indicator)
+	const capsRatio = (trimmed.match(/[A-Z]/g) || []).length / trimmed.length;
+	if (capsRatio > 0.5 && trimmed.length > 20) {
+		return true;
+	}
+	
+	// Check for offensive language (basic detection)
+	const offensiveWords = [
+		'fuck', 'shit', 'damn', 'bitch', 'asshole', 'bastard',
+		'idiot', 'stupid', 'dumb', 'retard', 'moron'
+	];
+	
+	for (const word of offensiveWords) {
+		if (trimmed.includes(word)) {
+			return true;
+		}
+	}
+	
+	return false;
+}
+
 // Simple sentiment analysis (in production, would use AI/ML)
 function analyzeSentiment(text) {
 	const lowerText = text.toLowerCase();
@@ -398,13 +441,13 @@ export default {
 				}
 				
 				try {
-					// Save to D1 database
+					// Save to D1 database (including spam records)
 					const result = await env.DB.prepare(`
 						INSERT INTO feedback (
 							id, source, title, content, author, timestamp, metadata,
 							sentiment, sentiment_score, themes, value_score, urgency_score,
-							is_meaningless, reasoning
-						) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+							is_meaningless, is_spam, reasoning
+						) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 					`).bind(
 						feedbackData.id,
 						feedbackData.source,
@@ -419,6 +462,7 @@ export default {
 						feedbackData.analysis?.valueScore || 0,
 						feedbackData.analysis?.urgencyScore || 0,
 						feedbackData.analysis?.isMeaningless ? 1 : 0,
+						feedbackData.analysis?.isSpam ? 1 : 0,
 						feedbackData.analysis?.reasoning || ''
 					).run();
 					
@@ -517,6 +561,7 @@ export default {
 								valueScore: row.value_score,
 								urgencyScore: row.urgency_score,
 								isMeaningless: row.is_meaningless === 1,
+								isSpam: row.is_spam === 1,
 								reasoning: row.reasoning
 							}
 						}));
@@ -612,41 +657,52 @@ export default {
 				});
 			}
 			
-			// AI endpoint: Validate feedback (check if meaningful)
+			// AI endpoint: Validate feedback (check if meaningful, spam, or offensive)
 			if (path === '/api/ai/validate' && request.method === 'POST') {
 				const { content } = await request.json();
 				
 				if (!env.AI) {
 					// Fallback to rule-based if AI not available
 					const isMeaningless = checkIfMeaningless(content);
+					const isSpam = checkIfSpam(content);
 					return new Response(JSON.stringify({ 
-						isMeaningless,
-						reason: isMeaningless ? 'Feedback contains repetitive patterns or lacks coherent meaning' : 'Feedback appears meaningful'
+						isMeaningless: isMeaningless || isSpam,
+						isSpam,
+						reason: isSpam ? 'Content appears to be spam or offensive' : (isMeaningless ? 'Feedback contains repetitive patterns or lacks coherent meaning' : 'Feedback appears meaningful')
 					}), {
 						headers: { ...corsHeaders, 'Content-Type': 'application/json' }
 					});
 				}
 				
 				try {
-					const prompt = `Analyze this feedback text and determine if it's meaningful or just gibberish/nonsense. 
-					
+					const prompt = `Analyze this feedback text and determine if it's:
+1. Meaningful feedback (valid product feedback)
+2. Meaningless/gibberish (repetitive patterns, nonsense)
+3. Spam (irrelevant content, promotional material, off-topic)
+4. Offensive (inappropriate language, hate speech, harassment)
+
 Feedback: "${content}"
 
 Respond with JSON only:
 {
   "isMeaningless": true/false,
+  "isSpam": true/false,
   "reason": "brief explanation why"
 }
 
-Examples of meaningless: repetitive patterns like "dasdasdasd", random character sequences, repetitive words without meaning, pure gibberish.`;
+Examples:
+- Meaningless: "dasdasdasd", "asdfasdfasdf", repetitive patterns
+- Spam: promotional content, irrelevant topics, advertising
+- Offensive: hate speech, harassment, inappropriate language
+- Valid: actual product feedback, feature requests, bug reports`;
 
 					// Use Llama 3.1 8B Instruct for validation (faster, sufficient for simple task)
 					const response = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
 						messages: [
-							{ role: 'system', content: 'You are a feedback validation assistant. Analyze text and determine if it has meaningful content. Always respond with valid JSON only.' },
+							{ role: 'system', content: 'You are a feedback validation assistant. Analyze text and determine if it has meaningful content, is spam, or offensive. Always respond with valid JSON only. Be strict about spam and offensive content - classify as spam if irrelevant, promotional, or off-topic. Classify as offensive if it contains hate speech, harassment, or inappropriate language.' },
 							{ role: 'user', content: prompt }
 						],
-						max_tokens: 200,
+						max_tokens: 250,
 						temperature: 0.2
 					});
 
@@ -678,10 +734,20 @@ Examples of meaningless: repetitive patterns like "dasdasdasd", random character
 											 lowerResponse.includes('gibberish') ||
 											 lowerResponse.includes('nonsense') ||
 											 (lowerResponse.includes('true') && lowerResponse.includes('isMeaningless'));
+						const isSpam = lowerResponse.includes('spam') || 
+									  lowerResponse.includes('irrelevant') ||
+									  lowerResponse.includes('offensive') ||
+									  lowerResponse.includes('inappropriate');
 						result = { 
-							isMeaningless, 
+							isMeaningless: isMeaningless || isSpam,
+							isSpam: isSpam,
 							reason: aiResponse.substring(0, 150) || 'Unable to determine meaning' 
 						};
+					}
+					
+					// Ensure isSpam is set
+					if (result.isSpam === undefined) {
+						result.isSpam = false;
 					}
 					
 					return new Response(JSON.stringify(result), {
@@ -690,9 +756,11 @@ Examples of meaningless: repetitive patterns like "dasdasdasd", random character
 				} catch (error) {
 					// Fallback to rule-based
 					const isMeaningless = checkIfMeaningless(content);
+					const isSpam = checkIfSpam(content);
 					return new Response(JSON.stringify({ 
-						isMeaningless,
-						reason: isMeaningless ? 'Feedback contains repetitive patterns or lacks coherent meaning' : 'Feedback appears meaningful'
+						isMeaningless: isMeaningless || isSpam,
+						isSpam,
+						reason: isSpam ? 'Content appears to be spam or offensive' : (isMeaningless ? 'Feedback contains repetitive patterns or lacks coherent meaning' : 'Feedback appears meaningful')
 					}), {
 						headers: { ...corsHeaders, 'Content-Type': 'application/json' }
 					});
@@ -702,6 +770,23 @@ Examples of meaningless: repetitive patterns like "dasdasdasd", random character
 			// AI endpoint: Analyze feedback (sentiment, themes, scores)
 			if (path === '/api/ai/analyze' && request.method === 'POST') {
 				const { content, source, metadata = {} } = await request.json();
+				
+				// Check for spam first - if spam, skip analysis but mark it
+				const isSpam = checkIfSpam(content);
+				if (isSpam) {
+					return new Response(JSON.stringify({
+						sentiment: 'neutral',
+						sentimentScore: 0,
+						themes: ['Spam'],
+						valueScore: 0,
+						urgencyScore: 0,
+						isMeaningless: false,
+						isSpam: true,
+						reasoning: 'Content classified as spam or offensive. Analysis skipped but record stored.'
+					}), {
+						headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+					});
+				}
 				
 				if (!env.AI) {
 					// Fallback to rule-based if AI not available
@@ -719,7 +804,8 @@ Examples of meaningless: repetitive patterns like "dasdasdasd", random character
 						themes,
 						valueScore,
 						urgencyScore,
-						isMeaningless: checkIfMeaningless(content)
+						isMeaningless: checkIfMeaningless(content),
+						isSpam: false
 					}), {
 						headers: { ...corsHeaders, 'Content-Type': 'application/json' }
 					});
@@ -805,17 +891,22 @@ Respond with ONLY valid JSON, no other text.`;
 							throw new Error('No JSON found');
 						}
 
+						// Check if AI detected spam
+						const aiDetectedSpam = result.isSpam === true || 
+											  (result.themes && Array.isArray(result.themes) && result.themes.some(t => t.toLowerCase().includes('spam')));
+						
 						// Validate and normalize results
 						result = {
 							sentiment: ['positive', 'negative', 'neutral'].includes(result.sentiment?.toLowerCase()) 
 								? result.sentiment.toLowerCase() : 'neutral',
 							sentimentScore: Math.max(-3, Math.min(3, Number(result.sentimentScore) || 0)),
-							themes: Array.isArray(result.themes) ? result.themes : (result.themes ? [result.themes] : ['General']),
-							valueScore: Math.max(0, Math.min(10, Number(result.valueScore) || 0)),
-							urgencyScore: Math.max(0, Math.min(10, Number(result.urgencyScore) || 0)),
-							isUrgent: Boolean(result.isUrgent),
+							themes: aiDetectedSpam ? ['Spam'] : (Array.isArray(result.themes) ? result.themes : (result.themes ? [result.themes] : ['General'])),
+							valueScore: aiDetectedSpam ? 0 : Math.max(0, Math.min(10, Number(result.valueScore) || 0)),
+							urgencyScore: aiDetectedSpam ? 0 : Math.max(0, Math.min(10, Number(result.urgencyScore) || 0)),
+							isUrgent: aiDetectedSpam ? false : Boolean(result.isUrgent),
 							isMeaningless: false,
-							reasoning: result.reasoning || 'AI-generated analysis'
+							isSpam: aiDetectedSpam,
+							reasoning: aiDetectedSpam ? 'Content classified as spam or offensive. Analysis skipped but record stored.' : (result.reasoning || 'AI-generated analysis')
 						};
 
 						return new Response(JSON.stringify(result), {
@@ -838,6 +929,7 @@ Respond with ONLY valid JSON, no other text.`;
 							valueScore,
 							urgencyScore,
 							isMeaningless: checkIfMeaningless(content),
+							isSpam: false,
 							reasoning: 'Fallback analysis used'
 						}), {
 							headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -845,6 +937,22 @@ Respond with ONLY valid JSON, no other text.`;
 					}
 				} catch (error) {
 					// Fallback to rule-based
+					const isSpam = checkIfSpam(content);
+					if (isSpam) {
+						return new Response(JSON.stringify({
+							sentiment: 'neutral',
+							sentimentScore: 0,
+							themes: ['Spam'],
+							valueScore: 0,
+							urgencyScore: 0,
+							isMeaningless: false,
+							isSpam: true,
+							reasoning: 'Content classified as spam or offensive. Analysis skipped but record stored.'
+						}), {
+							headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+						});
+					}
+					
 					const sentiment = analyzeSentiment(content);
 					const themes = extractThemes(content);
 					const tempFeedback = { content, source, metadata };
@@ -860,6 +968,7 @@ Respond with ONLY valid JSON, no other text.`;
 						valueScore,
 						urgencyScore,
 						isMeaningless: checkIfMeaningless(content),
+						isSpam: false,
 						reasoning: 'Error occurred, fallback analysis used'
 					}), {
 						headers: { ...corsHeaders, 'Content-Type': 'application/json' }
