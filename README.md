@@ -12,7 +12,8 @@ Feedback Pulse helps product teams aggregate, analyze, and prioritize feedback f
 - **Contextual Sentiment Analysis**: Uses Llama 3.1 70B to understand sentiment beyond simple keywords, analyzing tone and context
 - **Smart Theme Extraction**: Automatically identifies topics like Performance, API, Security, Documentation, Bugs, Reliability, Features, Pricing
 - **Value & Urgency Scoring**: AI-driven prioritization (0-10 scale) based on business impact, source credibility, and criticality
-- **Meaningless Content Detection**: Filters out gibberish, spam, and non-substantive input using AI validation
+- **Spam & Off-topic Detection**: AI-powered detection of spam, promotional content, and off-topic messages. Spam is stored in database for moderation but analysis is skipped
+- **Meaningless Content Detection**: Filters out gibberish and non-substantive input using AI validation
 - **Detailed Explanations**: AI-generated reasoning for each analysis decision with contextual insights
 
 ### 📊 Interactive Dashboard
@@ -61,12 +62,14 @@ Feedback Pulse helps product teams aggregate, analyze, and prioritize feedback f
 ### System Flow
 
 ```
-User Input → AI Validation → AI Analysis → Database Storage → Dashboard Display
-     ↓              ↓              ↓              ↓                ↓
-  Feedback    Meaningless?    Sentiment      D1 SQLite      Real-time UI
-   Form       Detection       Themes         Storage         Updates
-                            Urgency/Value
+User Input → AI Validation → Spam Check → AI Analysis → Database Storage → Dashboard Display
+     ↓              ↓              ↓            ↓              ↓                ↓
+  Feedback    Meaningless?    Spam?      Sentiment      D1 SQLite      Real-time UI
+   Form       Detection       Skip       Themes         Storage         Updates
+                            Analysis    Urgency/Value   (All records)
 ```
+
+**Spam Handling:** If spam/off-topic content is detected, analysis is skipped but the record is still stored in the database with a spam flag for moderation purposes.
 
 ## 📋 Prerequisites
 
@@ -97,6 +100,21 @@ npm install
 npx wrangler d1 migrations apply feedback-db --local
 ```
 
+**Note:** If you need to reset the database (clear all data and reapply migrations):
+```bash
+# Drop existing tables
+npx wrangler d1 execute feedback-db --local --command "DROP TABLE IF EXISTS feedback"
+npx wrangler d1 execute feedback-db --local --command "DROP TABLE IF EXISTS d1_migrations"
+
+# Reapply migrations
+npx wrangler d1 migrations apply feedback-db --local
+```
+
+Or use the reset script:
+```bash
+./scripts/reset-db.sh
+```
+
 2. **Start the development server**
 ```bash
 npm run dev
@@ -108,6 +126,8 @@ http://localhost:8787
 ```
 
 The development server will automatically reload when you make changes to the code.
+
+**Tip:** Check out [`EXAMPLES.md`](./EXAMPLES.md) for sample feedback messages you can use to test the system, including valid feedback, spam examples, and edge cases.
 
 ### Production Deployment
 
@@ -122,6 +142,16 @@ npx wrangler d1 create feedback-db
 
 3. **Apply migrations to remote database**
 ```bash
+npx wrangler d1 migrations apply feedback-db --remote
+```
+
+**Note:** If you need to reset the remote database:
+```bash
+# Drop existing tables
+npx wrangler d1 execute feedback-db --remote --command "DROP TABLE IF EXISTS feedback"
+npx wrangler d1 execute feedback-db --remote --command "DROP TABLE IF EXISTS d1_migrations"
+
+# Reapply migrations
 npx wrangler d1 migrations apply feedback-db --remote
 ```
 
@@ -225,7 +255,7 @@ Save new feedback to the database.
 ```
 
 #### POST `/api/ai/validate`
-Validate if feedback content is meaningful (not gibberish/spam).
+Validate if feedback content is meaningful, spam, or offensive.
 
 **Request Body:**
 ```json
@@ -238,9 +268,12 @@ Validate if feedback content is meaningful (not gibberish/spam).
 ```json
 {
   "isMeaningless": false,
+  "isSpam": false,
   "reason": "Content appears to be meaningful feedback"
 }
 ```
+
+**Note:** If `isSpam` is `true`, the content will be stored in the database but no analysis will be performed.
 
 #### POST `/api/ai/analyze`
 Get comprehensive AI analysis for feedback.
@@ -309,6 +342,7 @@ Get detailed AI explanations for analysis metrics.
 | `value_score` | REAL | Value score (0-10) |
 | `urgency_score` | REAL | Urgency score (0-10) |
 | `is_meaningless` | INTEGER | Boolean flag (0/1) |
+| `is_spam` | INTEGER | Boolean flag (0/1) - spam/off-topic content |
 | `reasoning` | TEXT | AI-generated reasoning |
 | `created_at` | TEXT | Creation timestamp |
 
@@ -316,6 +350,7 @@ Get detailed AI explanations for analysis metrics.
 - `idx_feedback_source` on `source`
 - `idx_feedback_timestamp` on `timestamp`
 - `idx_feedback_sentiment` on `sentiment`
+- `idx_feedback_is_spam` on `is_spam`
 
 ## 📁 Project Structure
 
@@ -333,15 +368,19 @@ feedback-pulse/
 │                                    # - API client
 │                                    # - Real-time updates
 ├── migrations/
-│   └── 0001_create_feedback_table.sql  # Database schema
+│   ├── 0001_create_feedback_table.sql  # Database schema (includes is_spam)
+│   └── 0002_add_is_spam_column.sql     # Migration for existing databases
 ├── scripts/
-│   └── setup-db.sh                 # Database setup helper
+│   ├── setup-db.sh                 # Database setup helper
+│   └── reset-db.sh                # Database reset script
 ├── test/
 │   └── index.spec.js                # Unit tests
 ├── wrangler.jsonc                  # Cloudflare configuration
 ├── package.json                     # Dependencies & scripts
 ├── vitest.config.js                # Test configuration
-└── README.md                        # This file
+├── README.md                        # This file
+├── EXAMPLES.md                      # Feedback examples for testing
+└── FRICTION_LOG.md                  # Development friction log
 ```
 
 ## 🔧 Configuration
@@ -383,6 +422,38 @@ Run the test suite:
 npm test
 ```
 
+### Testing Feedback Examples
+
+See [`EXAMPLES.md`](./EXAMPLES.md) for a comprehensive collection of feedback examples including:
+
+**Valid Feedback:**
+- Positive feedback (appreciation, success stories)
+- Negative feedback (bugs, issues, complaints)
+- Neutral feedback (feature requests, questions)
+- High urgency feedback (critical issues, outages)
+- Performance, security, and documentation feedback
+
+**Spam Examples:**
+- Promotional/advertising spam
+- Off-topic/irrelevant content
+- Cryptocurrency/investment scams
+- Offensive/inappropriate content
+- Phishing attempts
+
+**Meaningless Content:**
+- Repetitive patterns
+- Random character sequences
+- Gibberish text
+
+**Use Cases:**
+- Test spam detection accuracy
+- Validate analysis quality across different feedback types
+- Test edge cases and boundary conditions
+- Demonstrate system capabilities
+- Training and documentation purposes
+
+Simply copy and paste examples from `EXAMPLES.md` into the feedback form to test different scenarios.
+
 ## 🐛 Troubleshooting
 
 ### Database Issues
@@ -401,6 +472,12 @@ npm test
 - Ensure migrations are applied: `npx wrangler d1 migrations apply feedback-db --remote`
 - Check database binding in `wrangler.jsonc`
 - Verify database ID is correct
+
+**Problem:** `table feedback has no column named is_spam`
+
+**Solution:**
+- Apply the latest migration: `npx wrangler d1 migrations apply feedback-db --local` (or `--remote`)
+- Or reset database and reapply all migrations using `./scripts/reset-db.sh`
 
 ### AI Analysis Issues
 
@@ -440,6 +517,8 @@ npm test
 - [ ] Custom theme detection training
 - [ ] API rate limiting and quotas
 - [ ] Custom domain support
+- [ ] Spam moderation dashboard
+- [ ] Automated spam pattern learning
 
 ## 📝 License
 

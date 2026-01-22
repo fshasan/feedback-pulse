@@ -13,11 +13,13 @@ CREATE TABLE IF NOT EXISTS feedback (
     value_score REAL,
     urgency_score REAL,
     is_meaningless INTEGER DEFAULT 0,
+    is_spam INTEGER DEFAULT 0,
     reasoning TEXT,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
--- Create index for faster queries
+-- Create indexes for faster queries
 CREATE INDEX IF NOT EXISTS idx_feedback_source ON feedback(source);
 CREATE INDEX IF NOT EXISTS idx_feedback_timestamp ON feedback(timestamp);
 CREATE INDEX IF NOT EXISTS idx_feedback_sentiment ON feedback(sentiment);
+CREATE INDEX IF NOT EXISTS idx_feedback_is_spam ON feedback(is_spam);

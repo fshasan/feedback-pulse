@@ -1592,9 +1592,8 @@
 					if (validateRes.ok) {
 						const validation = await validateRes.json();
 						if (validation.isSpam) {
-							// Spam detected - still proceed but show warning
-							alert(`⚠️ Warning: This content has been classified as spam or offensive. It will be stored in the database but no analysis will be performed. Reason: ${validation.reason || 'Content appears to be spam or irrelevant'}`);
-							// Continue to save spam record
+							// Spam detected - skip analysis, just save to database
+							// No alert, just proceed silently
 						} else if (validation.isMeaningless) {
 							contentInput.focus();
 							contentInput.setCustomValidity(`This feedback appears to be meaningless: ${validation.reason || 'Please provide meaningful feedback with clear content.'}`);
@@ -1644,83 +1643,147 @@
 				// Show loading state
 				const analyzeBtn = event.submitter;
 				const originalText = analyzeBtn.textContent;
-				analyzeBtn.textContent = '🤖 Analyzing with AI...';
 				analyzeBtn.disabled = true;
 
 				try {
-					// Use AI to analyze feedback
-					const analyzeRes = await fetch('/api/ai/analyze', {
-						method: 'POST',
-						headers: { 'Content-Type': 'application/json' },
-						body: JSON.stringify({ 
-							content: newFeedback.content, 
-							source: newFeedback.source,
-							metadata: newFeedback.metadata 
-						})
-					});
-
-					let analysis;
-					if (analyzeRes.ok) {
-						analysis = await analyzeRes.json();
-					} else {
-						// Fallback to rule-based if AI fails
-						console.warn('AI analysis failed, using fallback');
-						const tempProcessed = processFeedback(newFeedback);
-						analysis = tempProcessed.analysis;
+					// Check if spam first - if spam, skip analysis entirely
+					let isSpam = false;
+					let spamReason = '';
+					
+					try {
+						const validateRes = await fetch('/api/ai/validate', {
+							method: 'POST',
+							headers: { 'Content-Type': 'application/json' },
+							body: JSON.stringify({ content })
+						});
+						
+						if (validateRes.ok) {
+							const validation = await validateRes.json();
+							isSpam = validation.isSpam === true;
+							spamReason = validation.reason || 'Content appears to be spam or irrelevant';
+						}
+					} catch (validateError) {
+						console.warn('Validation check failed, proceeding with analysis');
 					}
 
-					// Combine feedback with AI analysis
-					const processed = {
-						...newFeedback,
-						analysis: analysis
-					};
-
-					// Save to database (including spam - spam is stored but not analyzed)
-					if (!analysis.isMeaningless || analysis.isSpam) {
-						try {
-							console.log('Saving to database:', processed);
-							const saveRes = await fetch('/api/feedback/save', {
-								method: 'POST',
-								headers: { 'Content-Type': 'application/json' },
-								body: JSON.stringify(processed)
-							});
-							
-							const saveResult = await saveRes.json();
-							console.log('Save response:', saveResult);
-							
-							if (!saveRes.ok) {
-								console.error('Failed to save:', saveResult);
-							} else if (analysis.isSpam) {
-								console.log('Spam feedback saved to database (no analysis performed)');
+					if (isSpam) {
+						// Spam detected - skip analysis, save directly to database
+						analyzeBtn.textContent = '💾 Saving...';
+						
+						const spamFeedback = {
+							...newFeedback,
+							analysis: {
+								sentiment: 'neutral',
+								sentimentScore: 0,
+								themes: ['Spam'],
+								valueScore: 0,
+								urgencyScore: 0,
+								isMeaningless: false,
+								isSpam: true,
+								reasoning: spamReason
 							}
-						} catch (saveError) {
-							console.error('Error saving feedback:', saveError);
+						};
+
+						// Save spam to database (no analysis performed)
+						const saveRes = await fetch('/api/feedback/save', {
+							method: 'POST',
+							headers: { 'Content-Type': 'application/json' },
+							body: JSON.stringify(spamFeedback)
+						});
+						
+						const saveResult = await saveRes.json();
+						
+						if (!saveRes.ok) {
+							console.error('Failed to save spam:', saveResult);
+							alert('Error saving feedback: ' + (saveResult.message || 'Unknown error'));
+						} else {
+							console.log('✓ Spam feedback saved to database (no analysis performed)');
+							
+							// Show spam message with ID and content
+							const card = document.getElementById('analysisCard');
+							const contentDiv = document.getElementById('analysisContent');
+							contentDiv.innerHTML = `
+								<!-- Feedback Content with ID at top -->
+								<div class="feedback-header">
+									<span class="feedback-id">${spamFeedback.id}</span>
+									<div class="feedback-content-display">${spamFeedback.content}</div>
+								</div>
+								
+								<div style="padding: 20px; text-align: center; margin-top: 20px;">
+									<div style="font-size: 48px; margin-bottom: 16px;">🚫</div>
+									<h3 style="color: #ef4444; margin-bottom: 12px;">Spam/Off-topic Content Detected</h3>
+									<p style="color: #666; margin-bottom: 16px;">
+										This feedback has been classified as spam or off-topic content. 
+										The record has been stored in the database for moderation purposes, 
+										but no analysis has been performed.
+									</p>
+									<div style="background: #fee2e2; border: 1px solid #fca5a5; border-radius: 8px; padding: 12px; margin-top: 16px;">
+										<strong>Message ID:</strong> ${spamFeedback.id}<br>
+										<strong>Reason:</strong> ${spamReason}
+									</div>
+								</div>
+							`;
+							card.classList.add('active');
 						}
 					} else {
-						console.log('Feedback marked as meaningless, not saving');
-					}
+						// Not spam - proceed with normal analysis
+						analyzeBtn.textContent = '🤖 Analyzing with AI...';
+						
+						// Use AI to analyze feedback
+						const analyzeRes = await fetch('/api/ai/analyze', {
+							method: 'POST',
+							headers: { 'Content-Type': 'application/json' },
+							body: JSON.stringify({ 
+								content: newFeedback.content, 
+								source: newFeedback.source,
+								metadata: newFeedback.metadata 
+							})
+						});
 
-					// Show analysis (or spam message if spam)
-					if (analysis.isSpam) {
-						// Show spam message instead of analysis
-						const card = document.getElementById('analysisCard');
-						const content = document.getElementById('analysisContent');
-						content.innerHTML = `
-							<div style="padding: 20px; text-align: center;">
-								<div style="font-size: 48px; margin-bottom: 16px;">🚫</div>
-								<h3 style="color: #ef4444; margin-bottom: 12px;">Spam/Offensive Content Detected</h3>
-								<p style="color: #666; margin-bottom: 16px;">
-									This feedback has been classified as spam or offensive content. 
-									The record has been stored in the database for moderation purposes, 
-									but no analysis has been performed.
-								</p>
-								<div style="background: #fee2e2; border: 1px solid #fca5a5; border-radius: 8px; padding: 12px; margin-top: 16px;">
-									<strong>Reason:</strong> ${analysis.reasoning || 'Content appears to be spam, irrelevant, or offensive'}
-								</div>
-							</div>
-						`;
-						card.classList.add('active');
-					} else {
+						let analysis;
+						if (analyzeRes.ok) {
+							analysis = await analyzeRes.json();
+						} else {
+							// Fallback to rule-based if AI fails
+							console.warn('AI analysis failed, using fallback');
+							const tempProcessed = processFeedback(newFeedback);
+							analysis = tempProcessed.analysis;
+						}
+
+						// Combine feedback with AI analysis
+						const processed = {
+							...newFeedback,
+							analysis: analysis
+						};
+
+						// Save to database if not meaningless
+						if (!analysis.isMeaningless) {
+							try {
+								console.log('Saving to database:', processed);
+								const saveRes = await fetch('/api/feedback/save', {
+									method: 'POST',
+									headers: { 'Content-Type': 'application/json' },
+									body: JSON.stringify(processed)
+								});
+								
+								const saveResult = await saveRes.json();
+								console.log('Save response:', saveResult);
+								
+								if (!saveRes.ok) {
+									console.error('Failed to save:', saveResult);
+									alert('Error saving feedback: ' + (saveResult.message || 'Unknown error'));
+								} else {
+									console.log('✓ Feedback successfully saved to database');
+								}
+							} catch (saveError) {
+								console.error('Error saving feedback:', saveError);
+								alert('Error saving feedback: ' + saveError.message);
+							}
+						} else {
+							console.log('Feedback marked as meaningless, not saving');
+						}
+
+						// Show analysis
 						await showAnalysis(processed);
 					}
 
@@ -1730,8 +1793,8 @@
 					// Clear form
 					document.getElementById('feedbackForm').reset();
 				} catch (error) {
-					console.error('Error analyzing feedback:', error);
-					alert('Error analyzing feedback. Please try again.');
+					console.error('Error processing feedback:', error);
+					alert('Error processing feedback. Please try again.');
 				} finally {
 					analyzeBtn.textContent = originalText;
 					analyzeBtn.disabled = false;
@@ -2085,19 +2148,26 @@
 						}
 					}
 					if (feedback.analysis?.isSpam) {
-						// Show spam message instead of analysis
+						// Show spam message with ID and content instead of analysis
 						const card = document.getElementById('analysisCard');
-						const content = document.getElementById('analysisContent');
-						content.innerHTML = `
-							<div style="padding: 20px; text-align: center;">
+						const contentDiv = document.getElementById('analysisContent');
+						contentDiv.innerHTML = `
+							<!-- Feedback Content with ID at top -->
+							<div class="feedback-header">
+								<span class="feedback-id">${feedback.id}</span>
+								<div class="feedback-content-display">${feedback.content}</div>
+							</div>
+							
+							<div style="padding: 20px; text-align: center; margin-top: 20px;">
 								<div style="font-size: 48px; margin-bottom: 16px;">🚫</div>
-								<h3 style="color: #ef4444; margin-bottom: 12px;">Spam/Offensive Content Detected</h3>
+								<h3 style="color: #ef4444; margin-bottom: 12px;">Spam/Off-topic Content Detected</h3>
 								<p style="color: #666; margin-bottom: 16px;">
-									This feedback has been classified as spam or offensive content. 
+									This feedback has been classified as spam or off-topic content. 
 									The record has been stored in the database for moderation purposes, 
 									but no analysis has been performed.
 								</p>
 								<div style="background: #fee2e2; border: 1px solid #fca5a5; border-radius: 8px; padding: 12px; margin-top: 16px;">
+									<strong>Message ID:</strong> ${feedback.id}<br>
 									<strong>Reason:</strong> ${feedback.analysis.reasoning || 'Content appears to be spam, irrelevant, or offensive'}
 								</div>
 							</div>

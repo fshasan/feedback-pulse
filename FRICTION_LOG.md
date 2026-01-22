@@ -9,6 +9,9 @@ This document tracks friction points, issues, and pain points encountered during
 - [API & Backend Friction](#api--backend-friction)
 - [Tooling Friction](#tooling-friction)
 - [Documentation Friction](#documentation-friction)
+- [Security Friction](#security-friction)
+- [Feature Implementation Friction](#feature-implementation-friction)
+- [Performance Friction](#performance-friction)
 
 ---
 
@@ -302,6 +305,29 @@ This document tracks friction points, issues, and pain points encountered during
 
 ---
 
+### Examples File Creation
+**Date:** Testing and documentation
+**Severity:** Low
+**Description:**
+- Needed examples for testing spam detection and analysis quality
+- No centralized collection of test cases
+- Users needed reference examples for different feedback types
+**Resolution:**
+- Created `EXAMPLES.md` with comprehensive collection of:
+  - Valid feedback examples (positive, negative, neutral, high urgency)
+  - Spam examples (promotional, off-topic, offensive, scams)
+  - Meaningless/gibberish examples
+  - Testing scenarios
+**Impact:** Improved testing capabilities and documentation
+
+**Lessons Learned:**
+- Create examples file early in development
+- Include edge cases and boundary conditions
+- Organize examples by category for easy reference
+- Update examples as new patterns emerge
+
+---
+
 ## Performance Friction
 
 ### Chart Rendering
@@ -358,6 +384,75 @@ This document tracks friction points, issues, and pain points encountered during
 
 ---
 
+### Spam Detection Database Migration
+**Date:** Spam detection feature implementation
+**Severity:** High
+**Description:**
+- Added `is_spam` column to database schema
+- Error: `table feedback has no column named is_spam: SQLITE_ERROR`
+- Migration not applied to existing databases (local and remote)
+**Resolution:**
+- Created migration file `0002_add_is_spam_column.sql`
+- Need to run: `npx wrangler d1 migrations apply feedback-db --local` for local
+- Need to run: `npx wrangler d1 migrations apply feedback-db --remote` for remote
+**Impact:** Spam detection feature broken until migration applied
+
+**Lessons Learned:**
+- Always apply migrations after schema changes
+- Document migration steps clearly
+- Consider auto-migration on startup (with caution)
+- Test migrations on both local and remote environments
+
+---
+
+## Feature Implementation Friction
+
+### Spam Detection Implementation
+**Date:** Spam detection feature
+**Severity:** Medium
+**Description:**
+- Needed to implement spam/offensive content detection
+- Requirement: Skip analysis for spam but still store in database
+- Multiple iterations on user experience (alerts, silent handling)
+**Resolution:**
+- Implemented AI-powered spam detection with rule-based fallback
+- Early validation check before analysis
+- Silent spam handling (no alerts)
+- Spam records stored with `is_spam` flag
+- Visual indicators in UI (red background, SPAM badge)
+**Impact:** 
+- Improved content moderation
+- Better user experience (no interruption for spam)
+- Database stores spam for moderation purposes
+
+**Lessons Learned:**
+- Early validation prevents unnecessary processing
+- Silent handling improves UX for automated filtering
+- Store spam records for moderation/audit purposes
+- Visual indicators help identify spam quickly
+
+---
+
+### Spam Detection Flow Complexity
+**Date:** Spam detection feature
+**Severity:** Low
+**Description:**
+- Multiple validation points (frontend validation, backend validation, analyze endpoint)
+- Need to ensure spam is detected early to skip expensive AI analysis
+- Coordination between validation and analysis endpoints
+**Resolution:**
+- Early validation in frontend before calling analyze endpoint
+- Backend analyze endpoint also checks for spam as first step
+- Consistent spam detection logic across endpoints
+**Impact:** Slight complexity but ensures spam is caught early
+
+**Lessons Learned:**
+- Early detection saves resources
+- Consistent detection logic across layers
+- Consider caching validation results
+
+---
+
 ## Recommendations for Future Development
 
 1. **Migration System**: Implement proper database migration versioning
@@ -382,4 +477,4 @@ This document tracks friction points, issues, and pain points encountered during
 ---
 
 **Last Updated:** 2025-01-21
-**Total Friction Points Documented:** 20+
+**Total Friction Points Documented:** 26+

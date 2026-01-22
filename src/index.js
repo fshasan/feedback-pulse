@@ -441,7 +441,8 @@ export default {
 				}
 				
 				try {
-					// Save to D1 database (including spam records)
+					// Save to D1 database - ALWAYS saves spam records for moderation purposes
+					// Spam messages are stored with is_spam=1 flag, analysis skipped but record kept
 					const result = await env.DB.prepare(`
 						INSERT INTO feedback (
 							id, source, title, content, author, timestamp, metadata,
@@ -771,8 +772,69 @@ Examples:
 			if (path === '/api/ai/analyze' && request.method === 'POST') {
 				const { content, source, metadata = {} } = await request.json();
 				
-				// Check for spam first - if spam, skip analysis but mark it
-				const isSpam = checkIfSpam(content);
+				// Check for spam first - if spam, skip ALL analysis and return spam classification only
+				let isSpam = false;
+				let spamReason = 'Content classified as spam or off-topic. Analysis skipped but record stored.';
+				
+				if (env.AI) {
+					// Use AI to check for spam (more accurate)
+					try {
+						const spamCheckPrompt = `Analyze this text and determine if it's spam, off-topic, or offensive content (not product feedback):
+						
+Text: "${content}"
+
+Respond with JSON only:
+{
+  "isSpam": true/false,
+  "reason": "brief explanation"
+}
+
+Classify as spam if: promotional content, irrelevant topics, advertising, off-topic discussions, or offensive language.`;
+
+						const spamCheckResponse = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+							messages: [
+								{ role: 'system', content: 'You are a content moderator. Identify spam, off-topic, or offensive content. Always respond with valid JSON only.' },
+								{ role: 'user', content: spamCheckPrompt }
+							],
+							max_tokens: 150,
+							temperature: 0.2
+						});
+
+						let spamCheckResult = '';
+						if (typeof spamCheckResponse === 'string') {
+							spamCheckResult = spamCheckResponse;
+						} else if (spamCheckResponse.response) {
+							spamCheckResult = spamCheckResponse.response;
+						} else if (spamCheckResponse.text) {
+							spamCheckResult = spamCheckResponse.text;
+						}
+
+						try {
+							const jsonMatch = spamCheckResult.match(/\{[\s\S]*\}/);
+							if (jsonMatch) {
+								const parsed = JSON.parse(jsonMatch[0]);
+								isSpam = parsed.isSpam === true;
+								if (parsed.reason) spamReason = parsed.reason;
+							}
+						} catch {
+							// If JSON parsing fails, check text response
+							const lowerResponse = spamCheckResult.toLowerCase();
+							isSpam = lowerResponse.includes('spam') || 
+									 lowerResponse.includes('irrelevant') ||
+									 lowerResponse.includes('off-topic') ||
+									 lowerResponse.includes('offensive');
+						}
+					} catch (aiError) {
+						console.warn('AI spam check failed, using rule-based:', aiError);
+						// Fallback to rule-based
+						isSpam = checkIfSpam(content);
+					}
+				} else {
+					// Fallback to rule-based if AI not available
+					isSpam = checkIfSpam(content);
+				}
+				
+				// If spam detected, skip ALL analysis and return spam classification only
 				if (isSpam) {
 					return new Response(JSON.stringify({
 						sentiment: 'neutral',
@@ -782,7 +844,7 @@ Examples:
 						urgencyScore: 0,
 						isMeaningless: false,
 						isSpam: true,
-						reasoning: 'Content classified as spam or offensive. Analysis skipped but record stored.'
+						reasoning: spamReason
 					}), {
 						headers: { ...corsHeaders, 'Content-Type': 'application/json' }
 					});
